@@ -49,6 +49,8 @@ import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import com.pedro.rtplibrary.rtmp.RtmpCamera1;
 import com.pedro.rtpstreamer.R;
+import com.pedro.rtpstreamer.utils.AuthClass;
+import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
 import java.io.File;
@@ -68,7 +70,9 @@ public class MainActivity extends AppCompatActivity
         implements Button.OnClickListener, ConnectCheckerRtmp, SurfaceHolder.Callback,
         View.OnTouchListener {
 
+  AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
+  private AuthClass[] accounts = authData.getAuthData();
 
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
@@ -110,6 +114,10 @@ public class MainActivity extends AppCompatActivity
     bRecord.setOnClickListener(this);
     Button switchCamera = findViewById(R.id.switch_camera);
     switchCamera.setOnClickListener(this);
+    for (int i = 0; i < this.accounts.length; i++) {
+      System.out.println(this.accounts[i].getUsername());
+    }
+    System.out.println();
   }
 
   private void prepareOptionsMenuViews() {
