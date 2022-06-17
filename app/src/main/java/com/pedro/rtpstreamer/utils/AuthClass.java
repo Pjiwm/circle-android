@@ -28,19 +28,5 @@ public class AuthClass {
         return publicKey;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-    public void setRoomId(int roomId) {
-        this.roomId = roomId;
-    }
-
-    public void setPrivateKey(String privateKey) {
-        this.privateKey = privateKey;
-    }
-
-    public void setPublicKey(String publicKey) {
-        this.publicKey = publicKey;
-    }
 
 }
