@@ -41,6 +41,11 @@ public class PublicKeysData {
                                 "69HyplG9qT8+GRVXOJdGwFn51iqXy0UBxCMvoV34ZXGxzGVCPJah2n8Pq8e2pJ7j\n" +
                                 "ywIDAQAB\n" +
                                 "-----END PUBLIC KEY-----\n"
+                ),
+                new PublicKeysClass(
+                        "Server",
+                        0,
+                        "-----BEGIN PUBLIC KEY-----\\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAK1Fm9PdvDuH5jQFiXO6QlPRrhrVVt9z\\nEq4zwhuAdOLc8EvI+YU6aE8I22lBonGGKI4GxdLXAnsIrzaG//Rc2tsCAwEAAQ==\\n-----END PUBLIC KEY-----"
                 )
         };
         return publicKeys;
