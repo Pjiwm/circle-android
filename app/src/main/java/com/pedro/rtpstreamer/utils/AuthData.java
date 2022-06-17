@@ -5,6 +5,8 @@ public class AuthData {
         AuthClass[] accounts = new AuthClass[] {
                 new AuthClass(
                         "Jop",
+                        1,
+                        1,
                         "-----BEGIN RSA PRIVATE KEY-----\n" +
                         "MIIEpAIBAAKCAQEAruztFasZTIJ9HttjRwi72fprEG6J8mcxE7zyrMZQwiVUGHe2\n" +
                         "0x1VZ2ukl2tvXO1lcsAFf12pdQKgK0PxQmUzXYwU0C/+eV3F5ZUUb/DNlvRyGNys\n" +
@@ -44,6 +46,8 @@ public class AuthData {
                 ),
                 new AuthClass(
                         "Diego",
+                        2,
+                        2,
                         "-----BEGIN RSA PRIVATE KEY-----\n" +
                                 "MIIEowIBAAKCAQEA0CqcW6AW9C2syT2otsgkatFJi3RNt8Vga+DrgO5B9yzhI6fo\n" +
                                 "GfxzWpdwcgJ/hI4r+QVjTrqCqTrXeqOHIcQcuSCpECPfkPCi2eGtVkp2QILI9gQr\n" +
@@ -83,6 +87,8 @@ public class AuthData {
                 ),
                 new AuthClass(
                         "Twan",
+                        3,
+                        3,
                         "-----BEGIN RSA PRIVATE KEY-----\n" +
                                 "MIIEpQIBAAKCAQEA0Jry/VVG27X89+3mohBrJyjN5ZciLvB3kauuxYs0dhrxnoOT\n" +
                                 "9/1u+hYkf9nTYd8TDGB1zKXdpfMM2jENeoA3fJd2jhSJYEj0o7sTP5lBuHoq3pBj\n" +

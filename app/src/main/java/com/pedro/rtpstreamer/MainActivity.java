@@ -43,6 +43,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.navigation.NavigationView;
 import com.pedro.encoder.input.video.CameraHelper;
 import com.pedro.encoder.input.video.CameraOpenException;
@@ -53,8 +59,14 @@ import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -73,10 +85,13 @@ public class MainActivity extends AppCompatActivity
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
+  private AuthClass currentUser = accounts[0];
 
+  private static final String LOG_TAG = "Log: ";
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etUrl;
+  private EditText etMessage;
   private String currentDateAndTime = "";
   private File folder;
   //options menu
@@ -107,6 +122,8 @@ public class MainActivity extends AppCompatActivity
     prepareOptionsMenuViews();
     tvBitrate = findViewById(R.id.tv_bitrate);
     etUrl = findViewById(R.id.et_rtp_url);
+    etMessage = findViewById(R.id.send_text_message);
+    etMessage.setHint(R.string.hint_chat);
     etUrl.setHint(R.string.hint_rtmp);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
@@ -222,9 +239,49 @@ public class MainActivity extends AppCompatActivity
           rtmpCamera1.enableAudio();
         }
         return true;
+        case R.id.user_jop:
+          currentUser = accounts[0];
+          System.out.println(currentUser.getUsername());
+          return true;
+        case R.id.user_diego:
+          currentUser = accounts[1];
+          System.out.println(currentUser.getUsername());
+          return true;
+        case R.id.user_twan:
+          currentUser = accounts[2];
+          System.out.println(currentUser.getUsername());
+          return true;
+
       default:
         return false;
     }
+  }
+
+  public static String sha256String(String source) {
+    byte[] hash = null;
+    String hashCode = null;
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      hash = digest.digest(source.getBytes());
+    } catch (NoSuchAlgorithmException e) {
+      Log.wtf(LOG_TAG, "Can't calculate SHA-256");
+    }
+
+    if (hash != null) {
+      StringBuilder hashBuilder = new StringBuilder();
+      for (int i = 0; i < hash.length; i++) {
+        String hex = Integer.toHexString(hash[i]);
+        if (hex.length() == 1) {
+          hashBuilder.append("0");
+          hashBuilder.append(hex.charAt(hex.length() - 1));
+        } else {
+          hashBuilder.append(hex.substring(hex.length() - 2));
+        }
+      }
+      hashCode = hashBuilder.toString();
+    }
+
+    return hashCode;
   }
 
   @Override
@@ -257,50 +314,44 @@ public class MainActivity extends AppCompatActivity
         }
         break;
       case R.id.b_record:
-        Log.d("TAG_R", "b_start_stop: ");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-          if (!rtmpCamera1.isRecording()) {
-            try {
-              if (!folder.exists()) {
-                folder.mkdir();
-              }
-              SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
-              currentDateAndTime = sdf.format(new Date());
-              if (!rtmpCamera1.isStreaming()) {
-                if (prepareEncoders()) {
-                  rtmpCamera1.startRecord(
-                          folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-                  bRecord.setText(R.string.stop_record);
-                  Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
-                } else {
-                  Toast.makeText(this, "Error preparing stream, This device cant do it",
-                          Toast.LENGTH_SHORT).show();
-                }
-              } else {
-                rtmpCamera1.startRecord(
-                        folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-                bRecord.setText(R.string.stop_record);
-                Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
-              }
-            } catch (IOException e) {
-              rtmpCamera1.stopRecord();
-              PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-              bRecord.setText(R.string.start_record);
-              Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-          } else {
-            rtmpCamera1.stopRecord();
-            PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-            bRecord.setText(R.string.start_record);
-            Toast.makeText(this,
-                    "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
-                    Toast.LENGTH_SHORT).show();
-            currentDateAndTime = "";
-          }
-        } else {
-          Toast.makeText(this, "You need min JELLY_BEAN_MR2(API 18) for do it...",
-                  Toast.LENGTH_SHORT).show();
+        Log.d("TAG_R", "send message");
+
+        // Instantiate the RequestQueue
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url = "localhost:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+        JSONObject jsonBody = new JSONObject();
+        String hash = sha256String(etMessage.getText().toString());
+
+        try {
+          jsonBody.put("personId", currentUser.getPersonId());
+          jsonBody.put("room", currentUser.getRoomId());
+          jsonBody.put("message", etMessage.getText().toString());
+          jsonBody.put("dateTime", currentDateAndTime);
+          jsonBody.put("signature", "");
+        } catch (JSONException e) {
+          e.printStackTrace();
         }
+
+
+
+        Log.d("TAG_R", url);
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>() {
+                  @Override
+                  public void onResponse(String response) {
+                    Log.d("TAG_R", response);
+                  }
+                }, new Response.ErrorListener() {
+          @Override
+          public void onErrorResponse(VolleyError error) {
+            Log.d("TAG_R", "No message received");
+          }
+        });
+
+        //Add the request to the RequestQueue.
+        queue.add(stringRequest);
         break;
       case R.id.switch_camera:
         try {
@@ -355,7 +406,7 @@ public class MainActivity extends AppCompatActivity
                 && rtmpCamera1.isRecording()) {
           rtmpCamera1.stopRecord();
           PathUtils.updateGallery(getApplicationContext(), folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-          bRecord.setText(R.string.start_record);
+          bRecord.setText(R.string.send_message);
           Toast.makeText(MainActivity.this,
                   "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
                   Toast.LENGTH_SHORT).show();
@@ -385,7 +436,7 @@ public class MainActivity extends AppCompatActivity
                 && rtmpCamera1.isRecording()) {
           rtmpCamera1.stopRecord();
           PathUtils.updateGallery(getApplicationContext(), folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-          bRecord.setText(R.string.start_record);
+          bRecord.setText(R.string.send_message);
           Toast.makeText(MainActivity.this,
                   "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
                   Toast.LENGTH_SHORT).show();
@@ -434,7 +485,7 @@ public class MainActivity extends AppCompatActivity
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && rtmpCamera1.isRecording()) {
       rtmpCamera1.stopRecord();
       PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-      bRecord.setText(R.string.start_record);
+      bRecord.setText(R.string.send_message);
       Toast.makeText(this,
               "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
               Toast.LENGTH_SHORT).show();
