@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity
   private AuthClass[] accounts = authData.getAuthData();
   private AuthClass currentUser = accounts[0];
 
+  private static final String LOG_TAG = "Log: ";
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etUrl;
