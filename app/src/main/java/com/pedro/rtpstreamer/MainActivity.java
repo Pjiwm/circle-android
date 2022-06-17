@@ -19,6 +19,7 @@ package com.pedro.rtpstreamer;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,6 +48,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.navigation.NavigationView;
@@ -62,16 +64,25 @@ import com.pedro.rtpstreamer.utils.PathUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import javax.crypto.Cipher;
 
 /**
  * More documentation see:
@@ -263,7 +274,7 @@ public class MainActivity extends AppCompatActivity
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       hash = digest.digest(source.getBytes());
     } catch (NoSuchAlgorithmException e) {
-      Log.wtf(LOG_TAG, "Can't calculate SHA-256");
+      Log.wtf("LOG_TAG", "Can't calculate SHA-256");
     }
 
     if (hash != null) {
@@ -281,6 +292,93 @@ public class MainActivity extends AppCompatActivity
     }
 
     return hashCode;
+  }
+
+  public PrivateKey privateKey(String stringKey) throws Exception {
+    // Read the key into a String
+    StringBuilder pkcs8Lines = new StringBuilder();
+    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
+    String line;
+    while ((line = rdr.readLine()) != null) {
+      pkcs8Lines.append(line);
+    }
+
+    //Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+    String pkcs8Pem = pkcs8Lines.toString();
+    pkcs8Pem = pkcs8Pem.replace("-----BEGIN RSA PRIVATE KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replace("-----END RSA PRIVATE KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+
+    //Base64 decode the result
+
+    Log.d("TAG_R", pkcs8Pem);
+
+    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
+
+    //Extract the private key
+
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+    KeyFactory kf = KeyFactory.getInstance("RSA");
+    PrivateKey privKey = kf.generatePrivate(keySpec);
+    return privKey;
+
+  }
+
+  public PublicKey publicKey(String stringKey) throws Exception {
+    // Read the key into a String
+    StringBuilder pkcs8Lines = new StringBuilder();
+    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
+    String line;
+    while ((line = rdr.readLine()) != null) {
+      pkcs8Lines.append(line);
+    }
+
+    //Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+    String pkcs8Pem = pkcs8Lines.toString();
+    pkcs8Pem = pkcs8Pem.replace("-----BEGIN PUBLIC KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replace("-----END PUBLIC KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+
+    //Base64 decode the result
+
+    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
+
+    //Extract the private key
+
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+    KeyFactory kf = KeyFactory.getInstance("RSA");
+    PublicKey pubKey = kf.generatePublic(keySpec);
+    return pubKey;
+
+  }
+
+  public String encrypt(String message) throws Exception {
+
+    byte[] messageToBytes = message.getBytes();
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    PrivateKey privateKey = privateKey(currentUser.getPrivateKey());
+    cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+    byte[] encryptedBytes = cipher.doFinal(messageToBytes);
+    return encode(encryptedBytes);
+  }
+
+  private String encode(byte[] data) {
+    return Base64.encodeToString(data, Base64.DEFAULT);
+  }
+
+  public String decrypt(String encryptedMessage) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage);
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    PublicKey publicKey = publicKey(currentUser.getPublicKey());
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
+    return new String(decryptedMessage, "UTF8");
+  }
+
+  private byte[] decode(String data) {
+    return Base64.decode(data, Base64.DEFAULT);
   }
 
   @Override
@@ -317,40 +415,42 @@ public class MainActivity extends AppCompatActivity
 
         // Instantiate the RequestQueue
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "localhost:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+        String url = "http://10.0.2.2:3000/api/chats";
         JSONObject jsonBody = new JSONObject();
         String hash = sha256String(etMessage.getText().toString());
 
         try {
-          jsonBody.put("personId", currentUser.getPersonId());
-          jsonBody.put("room", currentUser.getRoomId());
-          jsonBody.put("message", etMessage.getText().toString());
-          jsonBody.put("dateTime", currentDateAndTime);
-          jsonBody.put("signature", "");
+          String signature = encrypt(hash);
+          jsonBody.put("Person", new String(currentUser.getPersonId()));
+          jsonBody.put("Room", currentUser.getRoomId());
+          jsonBody.put("Message", etMessage.getText().toString());
+          jsonBody.put("DateTime", new Date());
+          jsonBody.put("Hash", signature);
         } catch (JSONException e) {
+          e.printStackTrace();
+        } catch (Exception e) {
           e.printStackTrace();
         }
 
-
-
         Log.d("TAG_R", url);
+        Log.d("TAG_R", jsonBody.toString());
 
-        // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                new Response.Listener<String>() {
+        // Enter the correct url for your api service site
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, jsonBody,
+                new Response.Listener<JSONObject>() {
                   @Override
-                  public void onResponse(String response) {
-                    Log.d("TAG_R", response);
+                  public void onResponse(JSONObject response) {
+                    Toast.makeText(MainActivity.this, "Message sent", Toast.LENGTH_SHORT).show();
                   }
                 }, new Response.ErrorListener() {
           @Override
           public void onErrorResponse(VolleyError error) {
-            Log.d("TAG_R", "No message received");
+            Toast.makeText(MainActivity.this, "Error in sending data to API", Toast.LENGTH_SHORT).show();
           }
         });
 
         //Add the request to the RequestQueue.
-        queue.add(stringRequest);
+        queue.add(jsonObjectRequest);
         break;
       case R.id.switch_camera:
         try {
