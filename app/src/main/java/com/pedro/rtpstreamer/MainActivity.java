@@ -59,6 +59,7 @@ import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -320,11 +321,16 @@ public class MainActivity extends AppCompatActivity
         JSONObject jsonBody = new JSONObject();
         String hash = sha256String(etMessage.getText().toString());
 
-        jsonBody.put("personId", currentUser.getPersonId());
-        jsonBody.put("room", currentUser.getRoomId());
-        jsonBody.put("message", etMessage.getText().toString());
-        jsonBody.put("dateTime", currentDateAndTime);
-        jsonBody.put("signature", "");
+        try {
+          jsonBody.put("personId", currentUser.getPersonId());
+          jsonBody.put("room", currentUser.getRoomId());
+          jsonBody.put("message", etMessage.getText().toString());
+          jsonBody.put("dateTime", currentDateAndTime);
+          jsonBody.put("signature", "");
+        } catch (JSONException e) {
+          e.printStackTrace();
+        }
+
 
 
         Log.d("TAG_R", url);
