@@ -34,10 +34,7 @@ public class KeyUtils {
         try {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(1024);
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        PublicKey publicKey = keyPair.getPublic();
-        PrivateKey privateKey = keyPair.getPrivate();
-        return new KeyPair(publicKey,privateKey);
+        return keyPairGenerator.generateKeyPair();
         } catch (NoSuchAlgorithmException e) {
             System.out.println(e);
         }
