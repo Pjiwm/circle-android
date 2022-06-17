@@ -31,6 +31,7 @@
   <string name="resync_file">ReSync file</string>
   <!--menu-->
   <string name="microphone">Microphone</string>
+  <string name="account">Account</string>
   <string name="filters">Filters</string>
   <string name="clear">Clear</string>
   <string name="grey_scale">Grey scale</string>

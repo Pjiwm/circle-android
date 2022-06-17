@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
+  private AuthClass currentUser = accounts[0];
 
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
@@ -222,6 +223,19 @@ public class MainActivity extends AppCompatActivity
           rtmpCamera1.enableAudio();
         }
         return true;
+        case R.id.user_jop:
+          currentUser = accounts[0];
+          System.out.println(currentUser.getUsername());
+          return true;
+        case R.id.user_diego:
+          currentUser = accounts[1];
+          System.out.println(currentUser.getUsername());
+          return true;
+        case R.id.user_twan:
+          currentUser = accounts[2];
+          System.out.println(currentUser.getUsername());
+          return true;
+
       default:
         return false;
     }
