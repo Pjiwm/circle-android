@@ -34,6 +34,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,6 +49,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -61,6 +63,7 @@ import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -75,6 +78,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -116,6 +120,10 @@ public class MainActivity extends AppCompatActivity
           etWowzaPassword;
   private String lastVideoBitrate;
   private TextView tvBitrate;
+  private TextView mChatTextView;
+  private ScrollView mChatScrollView;
+  private RequestQueue queue;
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -142,6 +150,9 @@ public class MainActivity extends AppCompatActivity
     bRecord.setOnClickListener(this);
     Button switchCamera = findViewById(R.id.switch_camera);
     switchCamera.setOnClickListener(this);
+    mChatTextView = findViewById(R.id.chat_textView);
+    mChatScrollView = findViewById(R.id.chat_scrollview);
+    queue = Volley.newRequestQueue(this);
     for (int i = 0; i < this.accounts.length; i++) {
       System.out.println(this.accounts[i].getUsername());
     }
@@ -346,9 +357,9 @@ public class MainActivity extends AppCompatActivity
 
     byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
 
-    //Extract the private key
+    //Extract the public key
 
-    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pkcs8EncodedBytes);
     KeyFactory kf = KeyFactory.getInstance("RSA");
     PublicKey pubKey = kf.generatePublic(keySpec);
     return pubKey;
@@ -369,10 +380,10 @@ public class MainActivity extends AppCompatActivity
     return Base64.encodeToString(data, Base64.DEFAULT);
   }
 
-  public String decrypt(String encryptedMessage) throws Exception {
+  public String decrypt(String encryptedMessage, AuthClass user) throws Exception {
     byte[] encryptedBytes = decode(encryptedMessage);
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PublicKey publicKey = publicKey(currentUser.getPublicKey());
+    PublicKey publicKey = publicKey(user.getPublicKey());
     cipher.init(Cipher.DECRYPT_MODE, publicKey);
     byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
     return new String(decryptedMessage, "UTF8");
@@ -396,6 +407,56 @@ public class MainActivity extends AppCompatActivity
           }
           if (rtmpCamera1.isRecording() || prepareEncoders()) {
             rtmpCamera1.startStream(etUrl.getText().toString());
+
+            //If you get through starting the stream, your chat will start loading
+            String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+            mChatTextView.setText(null);
+            JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+                    new Response.Listener<JSONArray>() {
+                      @Override
+                      public void onResponse(JSONArray response) {
+                        try {
+                          for (int i = 0; i < response.length(); i++) {
+                            JSONObject chatMessage = response.getJSONObject(i);
+                            String person = chatMessage.getString("person");
+                            Log.d("TAG_D", String.valueOf(response.length()) + " " + String.valueOf(i));
+
+                            for(int j = 0; j < accounts.length; j++) {
+                              Log.d("TAG_D", person + " " + accounts[j].getPersonId());
+                              if (person.equals(accounts[j].getPersonId())) {
+                                String signature = chatMessage.getString("signature");
+                                String decryptedSign = decrypt(signature, accounts[j]);
+                                String message = chatMessage.getString("message");
+                                String hash = sha256String(message);
+                                Log.d("TAG_D", decryptedSign + " " + hash);
+                                if (decryptedSign.equals(hash)) {
+                                  mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
+
+                                  mChatScrollView.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                      mChatScrollView.fullScroll(View.FOCUS_DOWN);
+                                    }
+                                  });
+                                }
+                              }
+                            }
+                          }
+                        } catch (JSONException e) {
+                          e.printStackTrace();
+                        } catch (Exception e) {
+                          e.printStackTrace();
+                        }
+                      }
+                    }, new Response.ErrorListener() {
+              @Override
+              public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
+              }
+            });
+
+            queue.add(request);
+
           } else {
             //If you see this all time when you start stream,
             //it is because your encoder device dont support the configuration
@@ -414,19 +475,18 @@ public class MainActivity extends AppCompatActivity
       case R.id.b_record:
         Log.d("TAG_R", "send message");
 
-        // Instantiate the RequestQueue
-        RequestQueue queue = Volley.newRequestQueue(this);
+        // Setup json object and url for departure
         String url = "http://10.0.2.2:3000/api/chats";
         JSONObject jsonBody = new JSONObject();
         String hash = sha256String(etMessage.getText().toString());
 
         try {
           String signature = encrypt(hash);
-          jsonBody.put("Person", new String(currentUser.getPersonId()));
-          jsonBody.put("Room", currentUser.getRoomId());
-          jsonBody.put("Message", etMessage.getText().toString());
-          jsonBody.put("DateTime", new Date());
-          jsonBody.put("Hash", signature);
+          jsonBody.put("person", new String(currentUser.getPersonId()));
+          jsonBody.put("room", currentUser.getRoomId());
+          jsonBody.put("message", etMessage.getText().toString());
+          jsonBody.put("dateTime", new Date());
+          jsonBody.put("signature", signature);
         } catch (JSONException e) {
           e.printStackTrace();
         } catch (Exception e) {
@@ -451,7 +511,7 @@ public class MainActivity extends AppCompatActivity
         });
 
         //Add the request to the RequestQueue.
-        queue.add(jsonObjectRequest);
+        this.queue.add(jsonObjectRequest);
         break;
       case R.id.switch_camera:
         try {

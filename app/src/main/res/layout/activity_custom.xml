@@ -45,6 +45,32 @@
         app:layout_constraintVertical_bias="0.909"
         tools:layout_editor_absoluteX="40dp" />
 
+    <ScrollView
+        android:id="@+id/chat_scrollview"
+        android:layout_width="370dp"
+        android:layout_height="154dp"
+        app:layout_constraintBottom_toTopOf="@+id/send_text_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_rtp_url"
+        app:layout_constraintVertical_bias="0.933"
+        android:background="#99000000">
+
+      <LinearLayout
+          android:id="@+id/chat_linear"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/chat_textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@android:color/white"/>
+      </LinearLayout>
+    </ScrollView>
+
     <Button
         android:text="@string/send_message"
         android:layout_width="wrap_content"
