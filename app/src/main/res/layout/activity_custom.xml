@@ -20,18 +20,6 @@
         />
 
     <EditText
-        android:textColor="@color/appColor"
-        android:textColorHint="@color/appColor"
-        android:inputType="textUri"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_margin="20dp"
-        android:id="@+id/et_rtp_url"
-        app:layout_constraintTop_toTopOf="parent"
-        />
-
-    <EditText
         android:id="@+id/send_text_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -101,7 +101,6 @@ public class MainActivity extends AppCompatActivity
   private static final String LOG_TAG = "Log: ";
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
-  private EditText etUrl;
   private EditText etMessage;
   private String currentDateAndTime = "";
   private File folder;
@@ -137,10 +136,8 @@ public class MainActivity extends AppCompatActivity
     rtmpCamera1 = new RtmpCamera1(surfaceView, this);
     prepareOptionsMenuViews();
     tvBitrate = findViewById(R.id.tv_bitrate);
-    etUrl = findViewById(R.id.et_rtp_url);
     etMessage = findViewById(R.id.send_text_message);
     etMessage.setHint(R.string.hint_chat);
-    etUrl.setHint(R.string.hint_rtmp);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
@@ -393,15 +390,16 @@ public class MainActivity extends AppCompatActivity
   public void getChat() {
     String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
     mChatTextView.setText(null);
-    JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-            new Response.Listener<JSONArray>() {
+    JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+            new Response.Listener<JSONObject>() {
               @Override
-              public void onResponse(JSONArray response) {
+              public void onResponse(JSONObject response) {
                 try {
-                  for (int i = 0; i < response.length(); i++) {
-                    JSONObject chatMessage = response.getJSONObject(i);
+                  JSONArray chats = response.getJSONArray("chats");
+                  for (int i = 0; i < chats.length(); i++) {
+                    JSONObject chatMessage = chats.getJSONObject(i);
                     String person = chatMessage.getString("person");
-                    Log.d("TAG_D", String.valueOf(response.length()) + " " + String.valueOf(i));
+                    Log.d("TAG_D", String.valueOf(chats.length()) + " " + String.valueOf(i));
 
                     for(int j = 0; j < accounts.length; j++) {
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
@@ -473,7 +471,7 @@ public class MainActivity extends AppCompatActivity
             rtmpCamera1.setAuthorization(user, password);
           }
           if (rtmpCamera1.isRecording() || prepareEncoders()) {
-            rtmpCamera1.startStream(etUrl.getText().toString());
+            rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
 
             //If you get through starting the stream, your chat will start loading
             startRepeatingTask();
