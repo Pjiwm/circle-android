@@ -19,6 +19,7 @@ package com.pedro.rtpstreamer;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
@@ -51,14 +52,12 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.navigation.NavigationView;
 import com.pedro.encoder.input.video.CameraHelper;
 import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import com.pedro.rtplibrary.rtmp.RtmpCamera1;
-import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.PathUtils;
@@ -69,9 +68,7 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -79,12 +76,11 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.crypto.Cipher;
 
@@ -123,6 +119,7 @@ public class MainActivity extends AppCompatActivity
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
   private RequestQueue queue;
+  final Timer timer = new Timer();
 
 
   @Override
@@ -393,6 +390,76 @@ public class MainActivity extends AppCompatActivity
     return Base64.decode(data, Base64.DEFAULT);
   }
 
+  public void getChat() {
+    String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+    mChatTextView.setText(null);
+    JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+            new Response.Listener<JSONArray>() {
+              @Override
+              public void onResponse(JSONArray response) {
+                try {
+                  for (int i = 0; i < response.length(); i++) {
+                    JSONObject chatMessage = response.getJSONObject(i);
+                    String person = chatMessage.getString("person");
+                    Log.d("TAG_D", String.valueOf(response.length()) + " " + String.valueOf(i));
+
+                    for(int j = 0; j < accounts.length; j++) {
+                      Log.d("TAG_D", person + " " + accounts[j].getPersonId());
+                      if (person.equals(accounts[j].getPersonId())) {
+                        String signature = chatMessage.getString("signature");
+                        String decryptedSign = decrypt(signature, accounts[j]);
+                        String message = chatMessage.getString("message");
+                        String hash = sha256String(message);
+                        Log.d("TAG_D", decryptedSign + " " + hash);
+                        if (decryptedSign.equals(hash)) {
+                          mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
+
+                          mChatScrollView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                              mChatScrollView.fullScroll(View.FOCUS_DOWN);
+                            }
+                          });
+                        }
+                      }
+                    }
+                  }
+                } catch (JSONException e) {
+                  e.printStackTrace();
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
+              }
+            }, new Response.ErrorListener() {
+      @Override
+      public void onErrorResponse(VolleyError error) {
+        error.printStackTrace();
+      }
+    });
+
+    queue.add(request);
+  }
+
+  Handler mHandler = new Handler();
+  Runnable mHandlerTask = new Runnable()
+  {
+    @Override
+    public void run() {
+      getChat();
+      mHandler.postDelayed(mHandlerTask, 10000);
+    }
+  };
+
+  void startRepeatingTask()
+  {
+    mHandlerTask.run();
+  }
+
+  void stopRepeatingTask()
+  {
+    mHandler.removeCallbacks(mHandlerTask);
+  }
+
   @Override
   public void onClick(View v) {
     switch (v.getId()) {
@@ -409,53 +476,7 @@ public class MainActivity extends AppCompatActivity
             rtmpCamera1.startStream(etUrl.getText().toString());
 
             //If you get through starting the stream, your chat will start loading
-            String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
-            mChatTextView.setText(null);
-            JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-                    new Response.Listener<JSONArray>() {
-                      @Override
-                      public void onResponse(JSONArray response) {
-                        try {
-                          for (int i = 0; i < response.length(); i++) {
-                            JSONObject chatMessage = response.getJSONObject(i);
-                            String person = chatMessage.getString("person");
-                            Log.d("TAG_D", String.valueOf(response.length()) + " " + String.valueOf(i));
-
-                            for(int j = 0; j < accounts.length; j++) {
-                              Log.d("TAG_D", person + " " + accounts[j].getPersonId());
-                              if (person.equals(accounts[j].getPersonId())) {
-                                String signature = chatMessage.getString("signature");
-                                String decryptedSign = decrypt(signature, accounts[j]);
-                                String message = chatMessage.getString("message");
-                                String hash = sha256String(message);
-                                Log.d("TAG_D", decryptedSign + " " + hash);
-                                if (decryptedSign.equals(hash)) {
-                                  mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
-
-                                  mChatScrollView.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                      mChatScrollView.fullScroll(View.FOCUS_DOWN);
-                                    }
-                                  });
-                                }
-                              }
-                            }
-                          }
-                        } catch (JSONException e) {
-                          e.printStackTrace();
-                        } catch (Exception e) {
-                          e.printStackTrace();
-                        }
-                      }
-                    }, new Response.ErrorListener() {
-              @Override
-              public void onErrorResponse(VolleyError error) {
-                error.printStackTrace();
-              }
-            });
-
-            queue.add(request);
+            startRepeatingTask();
 
           } else {
             //If you see this all time when you start stream,
@@ -466,10 +487,12 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(this, "Error preparing stream, This device cant do it",
                     Toast.LENGTH_SHORT).show();
             bStartStop.setText(getResources().getString(R.string.start_button));
+            stopRepeatingTask();
           }
         } else {
           bStartStop.setText(getResources().getString(R.string.start_button));
           rtmpCamera1.stopStream();
+          timer.cancel();
         }
         break;
       case R.id.b_record:
@@ -502,6 +525,7 @@ public class MainActivity extends AppCompatActivity
                   @Override
                   public void onResponse(JSONObject response) {
                     Toast.makeText(MainActivity.this, "Message sent", Toast.LENGTH_SHORT).show();
+                    etMessage.setText("");
                   }
                 }, new Response.ErrorListener() {
           @Override
