@@ -100,7 +100,6 @@ public class MainActivity extends AppCompatActivity
   private AuthClass currentUser = accounts[0];
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
-//  private EditText etUrl;
   private EditText etMessage;
   private String currentDateAndTime = "";
   private File folder;
@@ -136,10 +135,8 @@ public class MainActivity extends AppCompatActivity
     rtmpCamera1 = new RtmpCamera1(surfaceView, this);
     prepareOptionsMenuViews();
     tvBitrate = findViewById(R.id.tv_bitrate);
-//    etUrl = findViewById(R.id.et_rtp_url);
     etMessage = findViewById(R.id.send_text_message);
     etMessage.setHint(R.string.hint_chat);
-//    etUrl.setHint(R.string.hint_rtmp);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
