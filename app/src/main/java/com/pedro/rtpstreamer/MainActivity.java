@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity
         implements Button.OnClickListener, ConnectCheckerRtmp, SurfaceHolder.Callback,
         View.OnTouchListener {
 
+  private static final String LOG_TAG = "Log: ";
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
