@@ -389,15 +389,16 @@ public class MainActivity extends AppCompatActivity
   public void getChat() {
     String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
     mChatTextView.setText(null);
-    JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-            new Response.Listener<JSONArray>() {
+    JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+            new Response.Listener<JSONObject>() {
               @Override
-              public void onResponse(JSONArray response) {
+              public void onResponse(JSONObject response) {
                 try {
-                  for (int i = 0; i < response.length(); i++) {
-                    JSONObject chatMessage = response.getJSONObject(i);
+                  JSONArray chats = response.getJSONArray("chats");
+                  for (int i = 0; i < chats.length(); i++) {
+                    JSONObject chatMessage = chats.getJSONObject(i);
                     String person = chatMessage.getString("person");
-                    Log.d("TAG_D", String.valueOf(response.length()) + " " + String.valueOf(i));
+                    Log.d("TAG_D", String.valueOf(chats.length()) + " " + String.valueOf(i));
 
                     for(int j = 0; j < accounts.length; j++) {
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
