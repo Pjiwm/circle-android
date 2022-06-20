@@ -16,6 +16,7 @@
 
 package com.pedro.rtpstreamer;
 
+import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
@@ -254,6 +255,10 @@ public class MainActivity extends AppCompatActivity
           rtmpCamera1.enableAudio();
         }
         return true;
+        case R.id.loginmenu:
+          Intent intent = new Intent(this, LoginActivity.class);
+          startActivity(intent);
+          return true;
         case R.id.user_jop:
           currentUser = accounts[0];
           System.out.println(currentUser.getUsername());
