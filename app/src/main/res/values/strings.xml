@@ -122,4 +122,5 @@
     <string name="login_failed">"Login failed"</string>
     <string name="prompt_email">Email</string>
     <string name="action_sign_in_short">Sign in</string>
+    <string name="LoginActivity">Login Page</string>
 </resources>

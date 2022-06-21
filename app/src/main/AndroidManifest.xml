@@ -41,6 +41,7 @@ package="com.pedro.rtpstreamer"
     </activity>
     <activity
         android:name=".LoginActivity"
+        android:label="@string/LoginActivity"
         android:exported="true" />
 </application>
 
