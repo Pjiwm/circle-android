@@ -1,30 +1,27 @@
 package com.pedro.rtpstreamer.utils;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.UUID;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 public class KeyUtils {
-    // Example to test encryption
-    //    System.out.println("keygen starts here \n");
-    //    String message = "hello world";
-    //    KeyPair keys = KeyUtils.keyGen();
-    //    try {
-    //      byte[] encryptedData = KeyUtils.encrypt(KeyUtils.stringToByteArray(message),keys.getPrivate());
-    //      System.out.println("method result" + KeyUtils.decrypt(encryptedData,KeyUtils.stringToByteArray(message),keys.getPublic()));
-    //    } catch (Exception e) {
-    //      System.out.println("encryption error");
-    //      e.printStackTrace();
-    //    }
     /**
      * Generates a public-private key pair
      * @return KeyPair a pair with a public and private key. Should always return keys.
@@ -40,6 +37,66 @@ public class KeyUtils {
         }
         return null;
     }
+    public static PrivateKey stringToPrivateKey(String private_key)
+            throws NoSuchAlgorithmException,
+            NoSuchPaddingException,
+            InvalidKeyException,
+            IllegalBlockSizeException,
+            BadPaddingException {
+
+        try {
+            // Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+            String pkcs8Pem = private_key.toString();
+            pkcs8Pem = pkcs8Pem.replace("-----BEGIN PRIVATE KEY-----", "");
+            pkcs8Pem = pkcs8Pem.replace("-----END PRIVATE KEY-----", "");
+            pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+            pkcs8Pem = pkcs8Pem.replaceAll("\\n", "");
+
+            // Base64 decode the result
+
+            byte[] pkcs8EncodedBytes = java.util.Base64.getDecoder().decode(pkcs8Pem);
+
+            // Extract the private key
+
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePrivate(keySpec);
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public static PublicKey stringToPublicKey(String publicKey)
+            throws NoSuchAlgorithmException,
+            NoSuchPaddingException,
+            InvalidKeyException,
+            IllegalBlockSizeException,
+            BadPaddingException {
+
+        try {
+            // Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+            String pkcs8Pem = publicKey.toString();
+            pkcs8Pem = pkcs8Pem.replace("-----BEGIN PUBLIC KEY-----", "");
+            pkcs8Pem = pkcs8Pem.replace("-----END PUBLIC KEY-----", "");
+            pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+            pkcs8Pem = pkcs8Pem.replaceAll("\\n", "");
+
+            // Base64 decode the result
+            byte[] pkcs8EncodedBytes = java.util.Base64.getDecoder().decode(pkcs8Pem);
+
+            // Extract the private key
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pkcs8EncodedBytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePublic(keySpec);
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
     /**
      * Signs a bytearray with custom signature (hash with uuid).
      * @param data The bytearray that will be signed
@@ -50,6 +107,7 @@ public class KeyUtils {
         System.out.println("\n---ENCRYPTION STARTED---");
         //Generate hash and UUID
         String hash = KeyUtils.sha1Hash(data);
+        System.out.println("hash " + hash);
         String uuid = UUID.randomUUID().toString();
         System.out.println("Hash before encryption: " + hash);
         System.out.println("UUID before encryption: " + uuid);
@@ -83,12 +141,14 @@ public class KeyUtils {
         try{
             decryptedData = cipher.doFinal(cypher);
         } catch (Exception e){
-            throw new IllegalArgumentException("Key not valid");
+            throw new IllegalArgumentException(e);
         }
         System.out.println("---DECRYPTION COMPLETE--");
+        //Hack to remove leading 0s 1s and -1s from js code
+        decryptedData = KeyUtils.removeInts(decryptedData);
         //Conversion goes as follows Byte array -> String (utf-8) -> JSONArray
+        System.out.println("Decrypted String: " + new String(decryptedData,StandardCharsets.UTF_8));
         JSONArray jsonArray = byteArrayToJsonArray(decryptedData);
-        //index 0 = hash, index 1 = UUID
         //Hash the object and compare it to decrypted hash
         String hash = sha1Hash(object);
         boolean isValid = hash.equals(jsonArray.getString(0));
@@ -126,36 +186,21 @@ public class KeyUtils {
 
         return publicKey;
     }
-    public static String sha1Hash(byte[] input){
-        try {
-            // getInstance() method is called with algorithm SHA-1
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-
-            // digest() method is called
-            // to calculate message digest of the input string
-            // returned as array of byte
-            byte[] messageDigest = md.digest(input);
-
-            // Convert byte array into signum representation
-            BigInteger no = new BigInteger(1, messageDigest);
-
-            // Convert message digest into hex value
-            String hashtext = no.toString(16);
-
-            // Add preceding 0s to make it 32 bit
-            while (hashtext.length() < 32) {
-                hashtext = "0" + hashtext;
-            }
-
-            // return the HashText
-            return hashtext;
-        }
-
-        // For specifying wrong message digest algorithms
-        catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+    public static String sha1Hash(byte[] toHash){
+        HashCode hashCode = Hashing.sha1().hashBytes(toHash);
+        return hashCode.toString();
     }
+    private static byte[] removeInts(byte[] arr){
+        // Count the leading zeros:
+        int zeroes = 0;
+        while (arr[zeroes] == 0 || arr[zeroes] == 1 || arr[zeroes] == -1) {
+            ++zeroes;
+        }
+
+        //check if all the numbers are 0 and last is 1
+        return Arrays.copyOfRange(arr,zeroes, arr.length);
+    }
+
     /**
      * Converts String to ByteArray
      * @param string string to be converted
@@ -178,7 +223,8 @@ public class KeyUtils {
     }
     public static JSONArray byteArrayToJsonArray(byte[] byteArray) throws JSONException {
         //Conversion goes as follows Byte array -> String (utf-8) -> JSONArray
-        return new JSONArray(new String(byteArray, StandardCharsets.UTF_8));
+        String string =  new String(byteArray, StandardCharsets.UTF_8);
+        return new JSONArray(string);
     }
 
 

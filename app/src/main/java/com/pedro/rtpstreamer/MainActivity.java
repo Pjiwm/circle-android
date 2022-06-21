@@ -64,15 +64,12 @@ import com.pedro.encoder.input.video.CameraHelper;
 import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import com.pedro.rtplibrary.rtmp.RtmpCamera1;
+import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
+import com.pedro.rtpstreamer.utils.KeyUtilsDemo;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.StringReader;
 import java.security.KeyFactory;
@@ -82,12 +79,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-
+import java.util.Locale;
 import javax.crypto.Cipher;
 
 /**
@@ -166,6 +165,8 @@ public class MainActivity extends AppCompatActivity
       }
 
     }
+    System.out.println();
+//    KeyUtilsDemo.jsDemo();
   }
 
   private void checkAndRequestPermissions() {
