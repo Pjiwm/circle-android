@@ -687,7 +687,7 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   public void surfaceCreated(SurfaceHolder surfaceHolder) {
-    drawerLayout.openDrawer(GravityCompat.START);
+    //drawerLayout.openDrawer(GravityCompat.START);
   }
 
   @Override
