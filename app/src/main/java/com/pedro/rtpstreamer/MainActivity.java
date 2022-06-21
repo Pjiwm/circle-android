@@ -155,14 +155,13 @@ public class MainActivity extends AppCompatActivity
     mChatTextView = findViewById(R.id.chat_textView);
     mChatScrollView = findViewById(R.id.chat_scrollview);
     queue = Volley.newRequestQueue(this);
-    Intent intentUser = getIntent();
-    if(intentUser.hasExtra("currentUsername")){
-      currentUsername = intentUser.getExtras().getString("currentUsername");
+    Intent intent = getIntent();
+    if(intent.hasExtra("currentUsername")){
+      currentUsername = intent.getExtras().getString("currentUsername");
       for (int i = 0; i < this.accounts.length; i++) {
         System.out.println(this.accounts[i].getUsername());
-        if(currentUsername == accounts[i].getUsername()){
+        if(currentUsername.equals(accounts[i].getUsername())){
           currentUser = accounts[i];
-          Log.d("TAG_USERLOGGEDIN", currentUser.getUsername());
         }
       }
 
