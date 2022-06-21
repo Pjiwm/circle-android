@@ -19,6 +19,7 @@ package com.pedro.rtpstreamer;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
@@ -98,13 +99,12 @@ public class MainActivity extends AppCompatActivity
         implements Button.OnClickListener, ConnectCheckerRtmp, SurfaceHolder.Callback,
         View.OnTouchListener {
 
+  private static final String LOG_TAG = "Log: ";
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
-  private AuthClass currentUser = accounts[0];
-  private Base64 b64;
-
-  private static final String LOG_TAG = "Log: ";
+  private AuthClass currentUser = null;
+  private String currentUsername = null;
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etMessage;
@@ -154,10 +154,18 @@ public class MainActivity extends AppCompatActivity
     mChatTextView = findViewById(R.id.chat_textView);
     mChatScrollView = findViewById(R.id.chat_scrollview);
     queue = Volley.newRequestQueue(this);
-    for (int i = 0; i < this.accounts.length; i++) {
-      System.out.println(this.accounts[i].getUsername());
+    Intent intentUser = getIntent();
+    if(intentUser.hasExtra("currentUsername")){
+      currentUsername = intentUser.getExtras().getString("currentUsername");
+      for (int i = 0; i < this.accounts.length; i++) {
+        System.out.println(this.accounts[i].getUsername());
+        if(currentUsername == accounts[i].getUsername()){
+          currentUser = accounts[i];
+          Log.d("TAG_USERLOGGEDIN", currentUser.getUsername());
+        }
+      }
+
     }
-    System.out.println();
   }
 
   private void checkAndRequestPermissions() {
@@ -284,16 +292,12 @@ public class MainActivity extends AppCompatActivity
           rtmpCamera1.enableAudio();
         }
         return true;
+        case R.id.loginmenu:
+          Intent intent = new Intent(this, LoginActivity.class);
+          startActivity(intent);
+          return true;
         case R.id.user_jop:
           currentUser = accounts[0];
-          System.out.println(currentUser.getUsername());
-          return true;
-        case R.id.user_diego:
-          currentUser = accounts[1];
-          System.out.println(currentUser.getUsername());
-          return true;
-        case R.id.user_twan:
-          currentUser = accounts[2];
           System.out.println(currentUser.getUsername());
           return true;
 
@@ -302,7 +306,7 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public static String sha256String(String source) {
+  public String sha256String(String source) {
     byte[] hash = null;
     String hashCode = null;
     try {

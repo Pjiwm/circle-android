@@ -86,7 +86,7 @@ public class AuthData {
                                 "-----END PUBLIC KEY-----\n"
                 ),
                 new AuthClass(
-                        "Twan",
+                        "Twan2",
                         "3",
                         "3",
                         "-----BEGIN RSA PRIVATE KEY-----\n" +
