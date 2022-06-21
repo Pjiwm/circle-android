@@ -35,8 +35,8 @@ public class SecurityTest {
     public void beforeEveryTest() throws Exception {
         hash1 = MainActivity.sha256String(message1);
         hash2 = MainActivity.sha256String(message2);
-        signature1 = MainActivity.encrypt(hash1, currentUser.getPrivateKey(), b64);
-        signature2 = MainActivity.encrypt(hash2, currentUser.getPrivateKey(), b64);
+        signature1 = MainActivity.encrypt(hash1, currentUser, b64);
+        signature2 = MainActivity.encrypt(hash2, currentUser, b64);
     }
 
     @Test
@@ -54,27 +54,27 @@ public class SecurityTest {
 
     @Test
     public void TheEncryptMethodShouldEncryptTheInputStringAndReturnItUsingTheEncodeMethod() throws Exception {
-        signature1 = MainActivity.encrypt(hash1, currentUser.getPrivateKey(), b64);
+        signature1 = MainActivity.encrypt(hash1, currentUser, b64);
         assertNotEquals(hash1, signature1);
     }
 
     @Test
     public void TheDecryptMethodShouldDecryptTheInputStringAndReturnItUsingTheDecodeMethod() throws Exception {
-        hash1 = MainActivity.decrypt(signature1, currentUser, currentUser.getPublicKey(), b64);
+        hash1 = MainActivity.decrypt(signature1, currentUser, b64);
         assertNotEquals(hash1, signature1);
     }
 
     @Test
     public void ADecryptedSignatureHashShouldBeTheSameAsAHashedMessage() throws Exception {
-        hash1 = MainActivity.decrypt(signature1, currentUser, currentUser.getPublicKey(), b64);
+        hash1 = MainActivity.decrypt(signature1, currentUser, b64);
         hash2 = MainActivity.sha256String(message1);
         assertEquals(hash1, hash2);
     }
 
     @Test
     public void AnEncryptedMessageShouldBeTheSameAfterItHasBeenDecrypted() throws Exception {
-        hash1 = MainActivity.encrypt(message1, currentUser.getPrivateKey(), b64);
-        message2 = MainActivity.decrypt(hash1, currentUser, currentUser.getPublicKey(), b64);
+        hash1 = MainActivity.encrypt(message1, currentUser, b64);
+        message2 = MainActivity.decrypt(hash1, currentUser, b64);
         assertEquals(message1, message2);
     }
 

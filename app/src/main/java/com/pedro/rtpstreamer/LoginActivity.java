@@ -32,6 +32,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mUsernameTextView;
     private Button mLoginButton;
     private RequestQueue queue;
+    private Base64 b64;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +61,7 @@ public class LoginActivity extends AppCompatActivity {
                     if(mUsernameTextView.getText().toString().equals(username)){
                         user = accounts[i];
                         try {
-                            String signature = mainContext.encrypt(hash, user);
+                            String signature = mainContext.encrypt(hash, user, b64);
                             jsonBody.put("name", mUsernameTextView.getText().toString());
                             jsonBody.put("signature", signature);
                         } catch (JSONException e) {

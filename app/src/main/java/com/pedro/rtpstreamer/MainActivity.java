@@ -105,6 +105,7 @@ public class MainActivity extends AppCompatActivity
   private AuthClass[] accounts = authData.getAuthData();
   private AuthClass currentUser = null;
   private String currentUsername = null;
+  private Base64 b64;
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etMessage;
@@ -306,7 +307,7 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public String sha256String(String source) {
+  public static String sha256String(String source) {
     byte[] hash = null;
     String hashCode = null;
     try {
@@ -393,11 +394,11 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public static String encrypt(String message, String prKey, Base64 base64) throws Exception {
+  public static String encrypt(String message, AuthClass user, Base64 base64) throws Exception {
 
     byte[] messageToBytes = message.getBytes();
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PrivateKey privateKey = privateKey(prKey);
+    PrivateKey privateKey = privateKey(user.getPrivateKey());
     cipher.init(Cipher.ENCRYPT_MODE, privateKey);
     byte[] encryptedBytes = cipher.doFinal(messageToBytes);
     return encode(encryptedBytes, base64);
@@ -407,10 +408,10 @@ public class MainActivity extends AppCompatActivity
     return base64.encodeToString(data, base64.DEFAULT);
   }
 
-  public static String decrypt(String encryptedMessage, AuthClass user, String puKey, Base64 base64) throws Exception {
+  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
     byte[] encryptedBytes = decode(encryptedMessage, base64);
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PublicKey publicKey = publicKey(puKey);
+    PublicKey publicKey = publicKey(user.getPublicKey());
     cipher.init(Cipher.DECRYPT_MODE, publicKey);
     byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
     return new String(decryptedMessage, "UTF8");
@@ -438,7 +439,7 @@ public class MainActivity extends AppCompatActivity
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
                         String signature = chatMessage.getString("signature");
-                        String decryptedSign = decrypt(signature, accounts[j], currentUser.getPublicKey(), b64);
+                        String decryptedSign = decrypt(signature, accounts[j], b64);
                         String message = chatMessage.getString("message");
                         String hash = sha256String(message);
                         Log.d("TAG_D", decryptedSign + " " + hash);
@@ -535,7 +536,7 @@ public class MainActivity extends AppCompatActivity
         String hash = sha256String(etMessage.getText().toString());
 
         try {
-          String signature = encrypt(hash, currentUser.getPrivateKey(), b64);
+          String signature = encrypt(hash, currentUser, b64);
           jsonBody.put("person", new String(currentUser.getPersonId()));
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
