@@ -51,6 +51,7 @@ public class KeyUtils {
             pkcs8Pem = pkcs8Pem.replace("-----BEGIN PRIVATE KEY-----", "");
             pkcs8Pem = pkcs8Pem.replace("-----END PRIVATE KEY-----", "");
             pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+            pkcs8Pem = pkcs8Pem.replaceAll("\\n", "");
 
             // Base64 decode the result
 
