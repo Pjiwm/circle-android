@@ -64,18 +64,19 @@
           />
     </menu>
   </item>
-  <item android:title="@string/auth">
+  <item
+      android:checkable="false"
+      android:enabled="true"
+      android:title="@string/auth">
     <menu>
       <item
-          android:title="@string/user"
-          app:actionLayout="@xml/edit_text_auth"
           android:id="@+id/et_user"
-          />
+          android:title="@string/user"
+          app:actionLayout="@xml/edit_text_auth" />
       <item
-          android:title="@string/password"
-          app:actionLayout="@xml/edit_text_auth"
           android:id="@+id/et_password"
-          />
+          android:title="@string/password"
+          app:actionLayout="@xml/edit_text_auth" />
     </menu>
   </item>
 </menu>

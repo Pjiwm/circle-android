@@ -16,9 +16,15 @@
 
 package com.pedro.rtpstreamer;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +39,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,25 +47,47 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.navigation.NavigationView;
 import com.pedro.encoder.input.video.CameraHelper;
 import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import com.pedro.rtplibrary.rtmp.RtmpCamera1;
+import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.KeyUtilsDemo;
 import com.pedro.rtpstreamer.utils.PathUtils;
+
 import java.io.File;
+import java.io.StringReader;
+import java.security.KeyFactory;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Locale;
+import javax.crypto.Cipher;
 
 /**
  * More documentation see:
@@ -69,13 +98,16 @@ public class MainActivity extends AppCompatActivity
         implements Button.OnClickListener, ConnectCheckerRtmp, SurfaceHolder.Callback,
         View.OnTouchListener {
 
+  private static final String LOG_TAG = "Log: ";
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
-
+  private AuthClass currentUser = null;
+  private String currentUsername = null;
+  private Base64 b64;
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
-  private EditText etUrl;
+  private EditText etMessage;
   private String currentDateAndTime = "";
   private File folder;
   //options menu
@@ -89,6 +121,11 @@ public class MainActivity extends AppCompatActivity
           etWowzaPassword;
   private String lastVideoBitrate;
   private TextView tvBitrate;
+  private TextView mChatTextView;
+  private ScrollView mChatScrollView;
+  private RequestQueue queue;
+  final Timer timer = new Timer();
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -102,23 +139,57 @@ public class MainActivity extends AppCompatActivity
     SurfaceView surfaceView = findViewById(R.id.surfaceView);
     surfaceView.getHolder().addCallback(this);
     surfaceView.setOnTouchListener(this);
-    rtmpCamera1 = new RtmpCamera1(surfaceView, this);
+    checkAndRequestPermissions();
+      rtmpCamera1 = new RtmpCamera1(surfaceView, this);
     prepareOptionsMenuViews();
     tvBitrate = findViewById(R.id.tv_bitrate);
-    etUrl = findViewById(R.id.et_rtp_url);
-    etUrl.setHint(R.string.hint_rtmp);
+    etMessage = findViewById(R.id.send_text_message);
+    etMessage.setHint(R.string.hint_chat);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
     bRecord.setOnClickListener(this);
     Button switchCamera = findViewById(R.id.switch_camera);
     switchCamera.setOnClickListener(this);
-    for (int i = 0; i < this.accounts.length; i++) {
-      System.out.println(this.accounts[i].getUsername());
+    mChatTextView = findViewById(R.id.chat_textView);
+    mChatScrollView = findViewById(R.id.chat_scrollview);
+    queue = Volley.newRequestQueue(this);
+    Intent intent = getIntent();
+    if(intent.hasExtra("currentUsername")){
+      currentUsername = intent.getExtras().getString("currentUsername");
+      for (int i = 0; i < this.accounts.length; i++) {
+        System.out.println(this.accounts[i].getUsername());
+        if(currentUsername.equals(accounts[i].getUsername())){
+          currentUser = accounts[i];
+        }
+      }
+
     }
     System.out.println();
 //    KeyUtilsDemo.jsDemo();
   }
+
+  private void checkAndRequestPermissions() {
+    int PERMISSION_ALL = 1;
+    String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+
+    if (!hasPermissions(this, PERMISSIONS)) {
+      ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+    }
+  }
+
+  public static boolean hasPermissions(Context context, String... permissions) {
+    if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+      for (String permission : permissions) {
+        if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+
 
   private void prepareOptionsMenuViews() {
     drawerLayout = findViewById(R.id.activity_custom);
@@ -222,85 +293,285 @@ public class MainActivity extends AppCompatActivity
           rtmpCamera1.enableAudio();
         }
         return true;
+        case R.id.loginmenu:
+          Intent intent = new Intent(this, LoginActivity.class);
+          startActivity(intent);
+          return true;
+        case R.id.user_jop:
+          currentUser = accounts[0];
+          System.out.println(currentUser.getUsername());
+          return true;
+
       default:
         return false;
     }
+  }
+
+  public static String sha256String(String source) {
+    byte[] hash = null;
+    String hashCode = null;
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      hash = digest.digest(source.getBytes());
+    } catch (NoSuchAlgorithmException e) {
+      Log.wtf("LOG_TAG", "Can't calculate SHA-256");
+    }
+
+    if (hash != null) {
+      StringBuilder hashBuilder = new StringBuilder();
+      for (int i = 0; i < hash.length; i++) {
+        String hex = Integer.toHexString(hash[i]);
+        if (hex.length() == 1) {
+          hashBuilder.append("0");
+          hashBuilder.append(hex.charAt(hex.length() - 1));
+        } else {
+          hashBuilder.append(hex.substring(hex.length() - 2));
+        }
+      }
+      hashCode = hashBuilder.toString();
+    }
+
+    return hashCode;
+  }
+
+  public static PrivateKey privateKey(String stringKey) throws Exception {
+    // Read the key into a String
+    StringBuilder pkcs8Lines = new StringBuilder();
+    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
+    String line;
+    while ((line = rdr.readLine()) != null) {
+      pkcs8Lines.append(line);
+    }
+
+    //Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+    String pkcs8Pem = pkcs8Lines.toString();
+    pkcs8Pem = pkcs8Pem.replace("-----BEGIN RSA PRIVATE KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replace("-----END RSA PRIVATE KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+
+    //Base64 decode the result
+
+    Log.d("TAG_R", pkcs8Pem);
+
+    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
+
+    //Extract the private key
+
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+    KeyFactory kf = KeyFactory.getInstance("RSA");
+    PrivateKey privKey = kf.generatePrivate(keySpec);
+    return privKey;
+
+  }
+
+  public static PublicKey publicKey(String stringKey) throws Exception {
+    // Read the key into a String
+    StringBuilder pkcs8Lines = new StringBuilder();
+    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
+    String line;
+    while ((line = rdr.readLine()) != null) {
+      pkcs8Lines.append(line);
+    }
+
+    //Remove the "BEGIN" and "END" lines, as well as any whitespace
+
+    String pkcs8Pem = pkcs8Lines.toString();
+    pkcs8Pem = pkcs8Pem.replace("-----BEGIN PUBLIC KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replace("-----END PUBLIC KEY-----", "");
+    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
+
+    //Base64 decode the result
+
+    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
+
+    //Extract the public key
+
+    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pkcs8EncodedBytes);
+    KeyFactory kf = KeyFactory.getInstance("RSA");
+    PublicKey pubKey = kf.generatePublic(keySpec);
+    return pubKey;
+
+  }
+
+  public static String encrypt(String message, AuthClass user, Base64 base64) throws Exception {
+
+    byte[] messageToBytes = message.getBytes();
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    PrivateKey privateKey = privateKey(user.getPrivateKey());
+    cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+    byte[] encryptedBytes = cipher.doFinal(messageToBytes);
+    return encode(encryptedBytes, base64);
+  }
+
+  public static String encode(byte[] data, Base64 base64) {
+    return base64.encodeToString(data, base64.DEFAULT);
+  }
+
+  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage, base64);
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    PublicKey publicKey = publicKey(user.getPublicKey());
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
+    return new String(decryptedMessage, "UTF8");
+  }
+
+  public static byte[] decode(String data, Base64 base64) {
+    return base64.decode(data, base64.DEFAULT);
+  }
+
+  public void getChat() {
+    String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+    mChatTextView.setText(null);
+    JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+            new Response.Listener<JSONObject>() {
+              @Override
+              public void onResponse(JSONObject response) {
+                try {
+                  JSONArray chats = response.getJSONArray("chats");
+                  for (int i = 0; i < chats.length(); i++) {
+                    JSONObject chatMessage = chats.getJSONObject(i);
+                    String person = chatMessage.getString("person");
+                    Log.d("TAG_D", String.valueOf(chats.length()) + " " + String.valueOf(i));
+
+                    for(int j = 0; j < accounts.length; j++) {
+                      Log.d("TAG_D", person + " " + accounts[j].getPersonId());
+                      if (person.equals(accounts[j].getPersonId())) {
+                        String signature = chatMessage.getString("signature");
+                        String decryptedSign = decrypt(signature, accounts[j], b64);
+                        String message = chatMessage.getString("message");
+                        String hash = sha256String(message);
+                        Log.d("TAG_D", decryptedSign + " " + hash);
+                        if (decryptedSign.equals(hash)) {
+                          mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
+
+                          mChatScrollView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                              mChatScrollView.fullScroll(View.FOCUS_DOWN);
+                            }
+                          });
+                        }
+                      }
+                    }
+                  }
+                } catch (JSONException e) {
+                  e.printStackTrace();
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
+              }
+            }, new Response.ErrorListener() {
+      @Override
+      public void onErrorResponse(VolleyError error) {
+        error.printStackTrace();
+      }
+    });
+
+    queue.add(request);
+  }
+
+  Handler mHandler = new Handler();
+  Runnable mHandlerTask = new Runnable()
+  {
+    @Override
+    public void run() {
+      getChat();
+      mHandler.postDelayed(mHandlerTask, 10000);
+    }
+  };
+
+  void startRepeatingTask()
+  {
+    mHandlerTask.run();
+  }
+
+  void stopRepeatingTask()
+  {
+    mHandler.removeCallbacks(mHandlerTask);
   }
 
   @Override
   public void onClick(View v) {
     switch (v.getId()) {
       case R.id.b_start_stop:
-        Log.d("TAG_R", "b_start_stop: ");
-        if (!rtmpCamera1.isStreaming()) {
-          bStartStop.setText(getResources().getString(R.string.stop_button));
-          String user = etWowzaUser.getText().toString();
-          String password = etWowzaPassword.getText().toString();
-          if (!user.isEmpty() && !password.isEmpty()) {
-            rtmpCamera1.setAuthorization(user, password);
-          }
-          if (rtmpCamera1.isRecording() || prepareEncoders()) {
-            rtmpCamera1.startStream(etUrl.getText().toString());
+        if (currentUser != null) {
+          Log.d("TAG_R", "b_start_stop: ");
+          if (!rtmpCamera1.isStreaming()) {
+            bStartStop.setText(getResources().getString(R.string.stop_button));
+            String user = etWowzaUser.getText().toString();
+            String password = etWowzaPassword.getText().toString();
+            if (!user.isEmpty() && !password.isEmpty()) {
+              rtmpCamera1.setAuthorization(user, password);
+            }
+            if (rtmpCamera1.isRecording() || prepareEncoders()) {
+              rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
+
+              //If you get through starting the stream, your chat will start loading
+              startRepeatingTask();
+
+            } else {
+              //If you see this all time when you start stream,
+              //it is because your encoder device dont support the configuration
+              //in video encoder maybe color format.
+              //If you have more encoder go to VideoEncoder or AudioEncoder class,
+              //change encoder and try
+              Toast.makeText(this, "Error preparing stream, This device cant do it",
+                      Toast.LENGTH_SHORT).show();
+              bStartStop.setText(getResources().getString(R.string.start_button));
+              stopRepeatingTask();
+            }
           } else {
-            //If you see this all time when you start stream,
-            //it is because your encoder device dont support the configuration
-            //in video encoder maybe color format.
-            //If you have more encoder go to VideoEncoder or AudioEncoder class,
-            //change encoder and try
-            Toast.makeText(this, "Error preparing stream, This device cant do it",
-                    Toast.LENGTH_SHORT).show();
             bStartStop.setText(getResources().getString(R.string.start_button));
+            rtmpCamera1.stopStream();
+            timer.cancel();
           }
         } else {
-          bStartStop.setText(getResources().getString(R.string.start_button));
-          rtmpCamera1.stopStream();
+          Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
         }
         break;
       case R.id.b_record:
-        Log.d("TAG_R", "b_start_stop: ");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-          if (!rtmpCamera1.isRecording()) {
-            try {
-              if (!folder.exists()) {
-                folder.mkdir();
-              }
-              SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
-              currentDateAndTime = sdf.format(new Date());
-              if (!rtmpCamera1.isStreaming()) {
-                if (prepareEncoders()) {
-                  rtmpCamera1.startRecord(
-                          folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-                  bRecord.setText(R.string.stop_record);
-                  Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
-                } else {
-                  Toast.makeText(this, "Error preparing stream, This device cant do it",
-                          Toast.LENGTH_SHORT).show();
-                }
-              } else {
-                rtmpCamera1.startRecord(
-                        folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-                bRecord.setText(R.string.stop_record);
-                Toast.makeText(this, "Recording... ", Toast.LENGTH_SHORT).show();
-              }
-            } catch (IOException e) {
-              rtmpCamera1.stopRecord();
-              PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-              bRecord.setText(R.string.start_record);
-              Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-          } else {
-            rtmpCamera1.stopRecord();
-            PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-            bRecord.setText(R.string.start_record);
-            Toast.makeText(this,
-                    "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
-                    Toast.LENGTH_SHORT).show();
-            currentDateAndTime = "";
-          }
-        } else {
-          Toast.makeText(this, "You need min JELLY_BEAN_MR2(API 18) for do it...",
-                  Toast.LENGTH_SHORT).show();
+        Log.d("TAG_R", "send message");
+
+        // Setup json object and url for departure
+        String url = "http://10.0.2.2:3000/api/chats";
+        JSONObject jsonBody = new JSONObject();
+        String hash = sha256String(etMessage.getText().toString());
+
+        try {
+          String signature = encrypt(hash, currentUser, b64);
+          jsonBody.put("person", new String(currentUser.getPersonId()));
+          jsonBody.put("room", currentUser.getRoomId());
+          jsonBody.put("message", etMessage.getText().toString());
+          jsonBody.put("dateTime", new Date());
+          jsonBody.put("signature", signature);
+        } catch (JSONException e) {
+          e.printStackTrace();
+        } catch (Exception e) {
+          e.printStackTrace();
         }
+
+        Log.d("TAG_R", url);
+        Log.d("TAG_R", jsonBody.toString());
+
+        // Enter the correct url for your api service site
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, jsonBody,
+                new Response.Listener<JSONObject>() {
+                  @Override
+                  public void onResponse(JSONObject response) {
+                    Toast.makeText(MainActivity.this, "Message sent", Toast.LENGTH_SHORT).show();
+                    etMessage.setText("");
+                  }
+                }, new Response.ErrorListener() {
+          @Override
+          public void onErrorResponse(VolleyError error) {
+            Toast.makeText(MainActivity.this, "Error in sending data to API", Toast.LENGTH_SHORT).show();
+          }
+        });
+
+        //Add the request to the RequestQueue.
+        this.queue.add(jsonObjectRequest);
         break;
       case R.id.switch_camera:
         try {
@@ -355,7 +626,7 @@ public class MainActivity extends AppCompatActivity
                 && rtmpCamera1.isRecording()) {
           rtmpCamera1.stopRecord();
           PathUtils.updateGallery(getApplicationContext(), folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-          bRecord.setText(R.string.start_record);
+          bRecord.setText(R.string.send_message);
           Toast.makeText(MainActivity.this,
                   "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
                   Toast.LENGTH_SHORT).show();
@@ -385,7 +656,7 @@ public class MainActivity extends AppCompatActivity
                 && rtmpCamera1.isRecording()) {
           rtmpCamera1.stopRecord();
           PathUtils.updateGallery(getApplicationContext(), folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-          bRecord.setText(R.string.start_record);
+          bRecord.setText(R.string.send_message);
           Toast.makeText(MainActivity.this,
                   "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
                   Toast.LENGTH_SHORT).show();
@@ -417,7 +688,7 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   public void surfaceCreated(SurfaceHolder surfaceHolder) {
-    drawerLayout.openDrawer(GravityCompat.START);
+    //drawerLayout.openDrawer(GravityCompat.START);
   }
 
   @Override
@@ -434,7 +705,7 @@ public class MainActivity extends AppCompatActivity
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && rtmpCamera1.isRecording()) {
       rtmpCamera1.stopRecord();
       PathUtils.updateGallery(this, folder.getAbsolutePath() + "/" + currentDateAndTime + ".mp4");
-      bRecord.setText(R.string.start_record);
+      bRecord.setText(R.string.send_message);
       Toast.makeText(this,
               "file " + currentDateAndTime + ".mp4 saved in " + folder.getAbsolutePath(),
               Toast.LENGTH_SHORT).show();
