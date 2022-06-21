@@ -16,6 +16,9 @@
 
 package com.pedro.rtpstreamer;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
@@ -43,6 +46,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -97,6 +102,7 @@ public class MainActivity extends AppCompatActivity
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
   private AuthClass currentUser = accounts[0];
+  private Base64 b64;
 
   private static final String LOG_TAG = "Log: ";
   private RtmpCamera1 rtmpCamera1;
@@ -133,7 +139,8 @@ public class MainActivity extends AppCompatActivity
     SurfaceView surfaceView = findViewById(R.id.surfaceView);
     surfaceView.getHolder().addCallback(this);
     surfaceView.setOnTouchListener(this);
-    rtmpCamera1 = new RtmpCamera1(surfaceView, this);
+    checkAndRequestPermissions();
+      rtmpCamera1 = new RtmpCamera1(surfaceView, this);
     prepareOptionsMenuViews();
     tvBitrate = findViewById(R.id.tv_bitrate);
     etMessage = findViewById(R.id.send_text_message);
@@ -152,6 +159,28 @@ public class MainActivity extends AppCompatActivity
     }
     System.out.println();
   }
+
+  private void checkAndRequestPermissions() {
+    int PERMISSION_ALL = 1;
+    String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+
+    if (!hasPermissions(this, PERMISSIONS)) {
+      ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+    }
+  }
+
+  public static boolean hasPermissions(Context context, String... permissions) {
+    if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+      for (String permission : permissions) {
+        if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+
 
   private void prepareOptionsMenuViews() {
     drawerLayout = findViewById(R.id.activity_custom);
@@ -300,7 +329,7 @@ public class MainActivity extends AppCompatActivity
     return hashCode;
   }
 
-  public PrivateKey privateKey(String stringKey) throws Exception {
+  public static PrivateKey privateKey(String stringKey) throws Exception {
     // Read the key into a String
     StringBuilder pkcs8Lines = new StringBuilder();
     BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
@@ -331,7 +360,7 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public PublicKey publicKey(String stringKey) throws Exception {
+  public static PublicKey publicKey(String stringKey) throws Exception {
     // Read the key into a String
     StringBuilder pkcs8Lines = new StringBuilder();
     BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
@@ -360,31 +389,31 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public String encrypt(String message) throws Exception {
+  public static String encrypt(String message, String prKey, Base64 base64) throws Exception {
 
     byte[] messageToBytes = message.getBytes();
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PrivateKey privateKey = privateKey(currentUser.getPrivateKey());
+    PrivateKey privateKey = privateKey(prKey);
     cipher.init(Cipher.ENCRYPT_MODE, privateKey);
     byte[] encryptedBytes = cipher.doFinal(messageToBytes);
-    return encode(encryptedBytes);
+    return encode(encryptedBytes, base64);
   }
 
-  private String encode(byte[] data) {
-    return Base64.encodeToString(data, Base64.DEFAULT);
+  public static String encode(byte[] data, Base64 base64) {
+    return base64.encodeToString(data, base64.DEFAULT);
   }
 
-  public String decrypt(String encryptedMessage, AuthClass user) throws Exception {
-    byte[] encryptedBytes = decode(encryptedMessage);
+  public static String decrypt(String encryptedMessage, AuthClass user, String puKey, Base64 base64) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage, base64);
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PublicKey publicKey = publicKey(user.getPublicKey());
+    PublicKey publicKey = publicKey(puKey);
     cipher.init(Cipher.DECRYPT_MODE, publicKey);
     byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
     return new String(decryptedMessage, "UTF8");
   }
 
-  private byte[] decode(String data) {
-    return Base64.decode(data, Base64.DEFAULT);
+  public static byte[] decode(String data, Base64 base64) {
+    return base64.decode(data, base64.DEFAULT);
   }
 
   public void getChat() {
@@ -405,7 +434,7 @@ public class MainActivity extends AppCompatActivity
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
                         String signature = chatMessage.getString("signature");
-                        String decryptedSign = decrypt(signature, accounts[j]);
+                        String decryptedSign = decrypt(signature, accounts[j], currentUser.getPublicKey(), b64);
                         String message = chatMessage.getString("message");
                         String hash = sha256String(message);
                         Log.d("TAG_D", decryptedSign + " " + hash);
@@ -502,7 +531,7 @@ public class MainActivity extends AppCompatActivity
         String hash = sha256String(etMessage.getText().toString());
 
         try {
-          String signature = encrypt(hash);
+          String signature = encrypt(hash, currentUser.getPrivateKey(), b64);
           jsonBody.put("person", new String(currentUser.getPersonId()));
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
