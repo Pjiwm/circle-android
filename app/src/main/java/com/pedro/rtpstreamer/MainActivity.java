@@ -98,7 +98,8 @@ public class MainActivity extends AppCompatActivity
   AuthData authData = new AuthData();
   private Integer[] orientations = new Integer[] { 0, 90, 180, 270 };
   private AuthClass[] accounts = authData.getAuthData();
-  private AuthClass currentUser = accounts[0];
+  private AuthClass currentUser = null;
+  private String currentUsername = null;
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etMessage;
@@ -147,10 +148,18 @@ public class MainActivity extends AppCompatActivity
     mChatTextView = findViewById(R.id.chat_textView);
     mChatScrollView = findViewById(R.id.chat_scrollview);
     queue = Volley.newRequestQueue(this);
-    for (int i = 0; i < this.accounts.length; i++) {
-      System.out.println(this.accounts[i].getUsername());
+    Intent intentUser = getIntent();
+    if(intentUser.hasExtra("currentUsername")){
+      currentUsername = intentUser.getExtras().getString("currentUsername");
+      for (int i = 0; i < this.accounts.length; i++) {
+        System.out.println(this.accounts[i].getUsername());
+        if(currentUsername == accounts[i].getUsername()){
+          currentUser = accounts[i];
+          Log.d("TAG_USERLOGGEDIN", currentUser.getUsername());
+        }
+      }
+
     }
-    System.out.println();
   }
 
   private void prepareOptionsMenuViews() {
@@ -263,21 +272,13 @@ public class MainActivity extends AppCompatActivity
           currentUser = accounts[0];
           System.out.println(currentUser.getUsername());
           return true;
-        case R.id.user_diego:
-          currentUser = accounts[1];
-          System.out.println(currentUser.getUsername());
-          return true;
-        case R.id.user_twan:
-          currentUser = accounts[2];
-          System.out.println(currentUser.getUsername());
-          return true;
 
       default:
         return false;
     }
   }
 
-  public static String sha256String(String source) {
+  public String sha256String(String source) {
     byte[] hash = null;
     String hashCode = null;
     try {
@@ -364,11 +365,11 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public String encrypt(String message) throws Exception {
+  public String encrypt(String message, AuthClass user) throws Exception {
 
     byte[] messageToBytes = message.getBytes();
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PrivateKey privateKey = privateKey(currentUser.getPrivateKey());
+    PrivateKey privateKey = privateKey(user.getPrivateKey());
     cipher.init(Cipher.ENCRYPT_MODE, privateKey);
     byte[] encryptedBytes = cipher.doFinal(messageToBytes);
     return encode(encryptedBytes);
@@ -506,7 +507,7 @@ public class MainActivity extends AppCompatActivity
         String hash = sha256String(etMessage.getText().toString());
 
         try {
-          String signature = encrypt(hash);
+          String signature = encrypt(hash, currentUser);
           jsonBody.put("person", new String(currentUser.getPersonId()));
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
