@@ -127,19 +127,23 @@ public class KeyUtils {
         System.out.println("---ENCRYPTION COMPLETE--");
         return encryptedData;
     }
+    public static String decrypt(String signature, byte[] object, PublicKey publicKey) throws Exception {
+        byte[] signatureByteArray = java.util.Base64.getDecoder().decode(signature);
+        return decrypt(signatureByteArray,object,publicKey);
+    }
     /**
      * Decrypts the custom signature (hash and uuid) and checks the hash of the object and the decrypted hash
      * @param cypher The bytearray that will be signed
      * @param publicKey The public key to be used to decrypt the signature
      * @return null if the key is not valid or with decryption errors. Otherwise, the UUID will be returned
      */
-    public static String decrypt(byte[] cypher, byte[] object, PublicKey publicKey) throws Exception{
+    public static String decrypt(byte[] signature, byte[] object, PublicKey publicKey) throws Exception{
         System.out.println("\n---DECRYPTION STARTED---");
         byte[] decryptedData;
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
         try{
-            decryptedData = cipher.doFinal(cypher);
+            decryptedData = cipher.doFinal(signature);
         } catch (Exception e){
             throw new IllegalArgumentException(e);
         }
