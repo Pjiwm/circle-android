@@ -495,35 +495,39 @@ public class MainActivity extends AppCompatActivity
   public void onClick(View v) {
     switch (v.getId()) {
       case R.id.b_start_stop:
-        Log.d("TAG_R", "b_start_stop: ");
-        if (!rtmpCamera1.isStreaming()) {
-          bStartStop.setText(getResources().getString(R.string.stop_button));
-          String user = etWowzaUser.getText().toString();
-          String password = etWowzaPassword.getText().toString();
-          if (!user.isEmpty() && !password.isEmpty()) {
-            rtmpCamera1.setAuthorization(user, password);
-          }
-          if (rtmpCamera1.isRecording() || prepareEncoders()) {
-            rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
+        if (currentUser != null) {
+          Log.d("TAG_R", "b_start_stop: ");
+          if (!rtmpCamera1.isStreaming()) {
+            bStartStop.setText(getResources().getString(R.string.stop_button));
+            String user = etWowzaUser.getText().toString();
+            String password = etWowzaPassword.getText().toString();
+            if (!user.isEmpty() && !password.isEmpty()) {
+              rtmpCamera1.setAuthorization(user, password);
+            }
+            if (rtmpCamera1.isRecording() || prepareEncoders()) {
+              rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
 
-            //If you get through starting the stream, your chat will start loading
-            startRepeatingTask();
+              //If you get through starting the stream, your chat will start loading
+              startRepeatingTask();
 
+            } else {
+              //If you see this all time when you start stream,
+              //it is because your encoder device dont support the configuration
+              //in video encoder maybe color format.
+              //If you have more encoder go to VideoEncoder or AudioEncoder class,
+              //change encoder and try
+              Toast.makeText(this, "Error preparing stream, This device cant do it",
+                      Toast.LENGTH_SHORT).show();
+              bStartStop.setText(getResources().getString(R.string.start_button));
+              stopRepeatingTask();
+            }
           } else {
-            //If you see this all time when you start stream,
-            //it is because your encoder device dont support the configuration
-            //in video encoder maybe color format.
-            //If you have more encoder go to VideoEncoder or AudioEncoder class,
-            //change encoder and try
-            Toast.makeText(this, "Error preparing stream, This device cant do it",
-                    Toast.LENGTH_SHORT).show();
             bStartStop.setText(getResources().getString(R.string.start_button));
-            stopRepeatingTask();
+            rtmpCamera1.stopStream();
+            timer.cancel();
           }
         } else {
-          bStartStop.setText(getResources().getString(R.string.start_button));
-          rtmpCamera1.stopStream();
-          timer.cancel();
+          Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
         }
         break;
       case R.id.b_record:
