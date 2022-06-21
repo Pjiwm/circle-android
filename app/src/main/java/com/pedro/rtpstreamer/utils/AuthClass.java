@@ -2,12 +2,12 @@ package com.pedro.rtpstreamer.utils;
 
 public class AuthClass {
     private String username;
-    private int personId;
-    private int roomId;
+    private String personId;
+    private String roomId;
     private String privateKey;
     private String publicKey;
 
-    public AuthClass(String username, int personId, int roomId, String privateKey, String publicKey) {
+    public AuthClass(String username, String personId, String roomId, String privateKey, String publicKey) {
         this.username = username;
         this.personId = personId;
         this.roomId = roomId;
@@ -19,10 +19,10 @@ public class AuthClass {
         return username;
     }
 
-    public int getPersonId() {
+    public String getPersonId() {
         return personId;
     }
-    public int getRoomId() {
+    public String getRoomId() {
         return roomId;
     }
 
