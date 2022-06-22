@@ -1,5 +1,7 @@
 package com.pedro.rtpstreamer.utils;
 
+import android.util.Log;
+
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 
@@ -155,6 +157,7 @@ public class KeyUtils {
         JSONArray jsonArray = byteArrayToJsonArray(decryptedData);
         //Hash the object and compare it to decrypted hash
         String hash = sha1Hash(object);
+        Log.d("Tag_D", hash);
         boolean isValid = hash.equals(jsonArray.getString(0));
         System.out.println("Hash after decryption: " + jsonArray.get(0));
         System.out.println("UUID after decryption: " + jsonArray.get(1));
@@ -215,11 +218,15 @@ public class KeyUtils {
     }
     public static byte[] jsonObjectToByteArray(JSONObject jsonObject){
         //Conversion goes as follows JSONObject -> String (utf-8) -> Byte array
-        return jsonObject.toString().getBytes(StandardCharsets.UTF_8);
+        String jsonString = jsonObject.toString();
+        jsonString = jsonString.replaceAll("\\\\","");
+        return jsonString.getBytes(StandardCharsets.UTF_8);
     }
     public static byte[] jsonArrayToByteArray(JSONArray jsonArray){
         //Conversion goes as follows JSONArray// -> String (utf-8) -> Byte array
-        return jsonArray.toString().getBytes(StandardCharsets.UTF_8);
+        String jsonString = jsonArray.toString();
+        jsonString = jsonString.replaceAll("\\\\","");
+        return jsonString.getBytes(StandardCharsets.UTF_8);
     }
     public static JSONObject byteArrayToJsonObject(byte[] byteArray) throws JSONException{
         //Conversion goes as follows Byte array -> String (utf-8) -> JSONObject

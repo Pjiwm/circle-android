@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
   private JSONArray uuids;
+  private String serverKey = "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCvRD121HacefHEo5xRGFsCUzrsRtyeQ5Xs8ZVPu2nbpoPGSZqFbInC+bh9vwGkX0yl9o2FTV/IVUG7SQAXf2MulPB6lPRX8L7BCDkitgkXrW6Mym41fm139CVJVjLt/djVuJ3/QifpM0O5GQeBr20EJgCvAkhBZZt7U+1P6gxZdwIDAQAB-----END PUBLIC KEY-----";
   private RequestQueue queue;
   private Context mContext;
   private
@@ -426,11 +427,15 @@ public class MainActivity extends AppCompatActivity
               @Override
               public void onResponse(JSONObject response) {
                 try {
+                  JSONObject chatsObject =new JSONObject();
                   JSONArray chats = response.getJSONArray("chats");
-
+                  chatsObject.put("roomChats",chats);
                   //Decryption voor de lijst van messages.
                   String chatsSignature = response.getString("signature");
-                  String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonArrayToByteArray(chats), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
+
+                  Log.d("TAG_D", chatsSignature);
+                  String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonObjectToByteArray(chatsObject), KeyUtils.stringToPublicKey(serverKey));
+                  Log.d("TAG_D", chatsObject.toString());
                   if (!uuid.isEmpty() || !uuid.equals("")) {
                     Date uuidDate = new Date();
                     JSONObject uuidObject = new JSONObject();

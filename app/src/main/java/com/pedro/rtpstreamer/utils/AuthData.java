@@ -83,6 +83,33 @@ public class AuthData {
                                 "YM21kkA8FVFH6I1mrU0QRQStFXNlsaJLxXlfRQZP2w2ne66+riin/13tsMdh0e1T\n" +
                                 "9rlyTRurMopES+OZ2wIDAQAB\n" +
                                 "-----END PUBLIC KEY-----"
+                ),
+                new AuthClass(
+                        "Barry",
+                        "62b2f0bb3e5321acd315f409",
+                        "62b2f15d3e5321acd315f40b",
+                        "-----BEGIN PRIVATE KEY-----\n" +
+                                "MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMoSH49d2zKbU4Yk\n" +
+                                "zYdT2GaOkDChjyx8zzi4813ZCWj03PVEDpjCHouJfxwZ9qpDuvw9mavf/fyyKD5A\n" +
+                                "2quu3x+KvwrRE7hMYTEgd2qPdL6FKAxs/hCguA8Qf/1cb/Yqvj3lmeLSl870dh7G\n" +
+                                "MPVB+hHxYSxvx0NKNi0Io1QJLfdXAgMBAAECgYEAlKC37e+O5q4wxR4UvlEBfo2l\n" +
+                                "qN9sO8CheosvFfwpW7WfQBeK1PkTFndPsw+1yo5+3kFA4paibldsGj4BmP3KxkzF\n" +
+                                "TrRaGh91j2DFiNmdOYyCexwczjixJhGcYjQSORp0nIE6fYjQGvhmQuBjoiPh2XG+\n" +
+                                "7tk6tPkJVQ70r8Q2EiECQQD247AyeUlVK7fPK5xdDygdm6GcPaaT9sFEsyE3iSxd\n" +
+                                "icb5xerCoMi81pR6c6udYDRaB7UItvFo92QHvIXMCt5zAkEA0YcLCMWQoKqXz2lI\n" +
+                                "PiIaUIrIlviRiF8q5n1ekvWhhWpiihKkfvN/xG/VCTw+c1E1En5R6GIYCVGS+x08\n" +
+                                "sqpGjQJAcUtGvcK+jiEDtkPy+xlLdVrHrKT13gxr4BS7d3qxKzNgZZoXAr05oL5v\n" +
+                                "YEnYRN2y6GWFA7y/x0VPV+WBGIMcVQJAWkKadkTlcNEMZMUt4dY/D8M5dg/OYbjd\n" +
+                                "ej03qIc39YlGucQeKLIssCqc00WogXTSMA1Kq5jWUe1aK+MEatL/YQJAfyUyppFw\n" +
+                                "+ajDJNnn2KG+1wN8m41jDTjcxw17cFl85h53SeA86WKanVyCCft1dYF5cvZ3PKCN\n" +
+                                "fpg8CFoncrYVCw==\n" +
+                                "-----END PRIVATE KEY-----",
+                        "-----BEGIN PUBLIC KEY-----\n" +
+                                "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDKEh+PXdsym1OGJM2HU9hmjpAw\n" +
+                                "oY8sfM84uPNd2Qlo9Nz1RA6Ywh6LiX8cGfaqQ7r8PZmr3/38sig+QNqrrt8fir8K\n" +
+                                "0RO4TGExIHdqj3S+hSgMbP4QoLgPEH/9XG/2Kr495Zni0pfO9HYexjD1QfoR8WEs\n" +
+                                "b8dDSjYtCKNUCS33VwIDAQAB\n" +
+                                "-----END PUBLIC KEY-----"
                 )
         };
         return accounts;
