@@ -4,6 +4,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
   <item
+      android:icon="@drawable/user"
+      android:title="@string/account"
+      app:showAsAction="always">
+    <menu>
+      <item
+          android:id="@+id/loginmenu"
+          android:title="Login"
+          app:showAsAction="always" />
+
+    </menu>
+  </item>
+  <item
       android:icon="@drawable/icon_mobile"
       android:title="@string/microphone"
       app:showAsAction="always"
