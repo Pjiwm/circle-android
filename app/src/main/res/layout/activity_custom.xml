@@ -21,6 +21,21 @@
         tools:layout_editor_absoluteY="-16dp" />
 
     <EditText
+        android:id="@+id/send_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:gravity="center"
+        android:inputType="textUri"
+        android:minHeight="48dp"
+        android:textColor="@color/appColor"
+        android:textColorHint="@color/appColor"
+        app:layout_constraintBottom_toTopOf="@+id/chat_scrollview"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.168"
+        tools:layout_editor_absoluteX="0dp" />
+
+    <EditText
         android:id="@+id/send_text_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,20 +45,22 @@
         android:minHeight="48dp"
         android:textColor="@color/appColor"
         android:textColorHint="@color/appColor"
-        app:layout_constraintBottom_toBottomOf="@+id/surfaceView"
+        app:layout_constraintBottom_toTopOf="@+id/b_start_stop"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.909"
-        tools:layout_editor_absoluteX="40dp" />
+        app:layout_constraintVertical_bias="0.972"
+        tools:layout_editor_absoluteX="15dp" />
 
     <ScrollView
         android:id="@+id/chat_scrollview"
         android:layout_width="370dp"
         android:layout_height="154dp"
+        android:background="#99000000"
         app:layout_constraintBottom_toTopOf="@+id/send_text_message"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.39"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintVertical_bias="0.933"
-        android:background="#99000000">
+        app:layout_constraintTop_toTopOf="@+id/surfaceView"
+        app:layout_constraintVertical_bias="0.916">
 
       <LinearLayout
           android:id="@+id/chat_linear"
@@ -55,8 +72,8 @@
             android:id="@+id/chat_textView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textColor="@android:color/white"/>
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
       </LinearLayout>
     </ScrollView>
 

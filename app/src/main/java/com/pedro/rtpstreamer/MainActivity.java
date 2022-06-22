@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etMessage;
+  private EditText etUrl;
   private String currentDateAndTime = "";
   private File folder;
   //options menu
@@ -158,6 +159,8 @@ public class MainActivity extends AppCompatActivity
     tvBitrate = findViewById(R.id.tv_bitrate);
     etMessage = findViewById(R.id.send_text_message);
     etMessage.setHint(R.string.hint_chat);
+    etUrl = findViewById(R.id.send_url);
+    etUrl.setHint(R.string.hint_rtmp);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
@@ -316,107 +319,6 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public static String sha256String(String source) {
-    byte[] hash = null;
-    String hashCode = null;
-    try {
-      MessageDigest digest = MessageDigest.getInstance("SHA-256");
-      hash = digest.digest(source.getBytes());
-    } catch (NoSuchAlgorithmException e) {
-      Log.wtf("LOG_TAG", "Can't calculate SHA-256");
-    }
-
-    if (hash != null) {
-      StringBuilder hashBuilder = new StringBuilder();
-      for (int i = 0; i < hash.length; i++) {
-        String hex = Integer.toHexString(hash[i]);
-        if (hex.length() == 1) {
-          hashBuilder.append("0");
-          hashBuilder.append(hex.charAt(hex.length() - 1));
-        } else {
-          hashBuilder.append(hex.substring(hex.length() - 2));
-        }
-      }
-      hashCode = hashBuilder.toString();
-    }
-
-    return hashCode;
-  }
-
-  public static PrivateKey privateKey(String stringKey) throws Exception {
-    // Read the key into a String
-    StringBuilder pkcs8Lines = new StringBuilder();
-    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
-    String line;
-    while ((line = rdr.readLine()) != null) {
-      pkcs8Lines.append(line);
-    }
-
-    //Remove the "BEGIN" and "END" lines, as well as any whitespace
-
-    String pkcs8Pem = pkcs8Lines.toString();
-    pkcs8Pem = pkcs8Pem.replace("-----BEGIN RSA PRIVATE KEY-----", "");
-    pkcs8Pem = pkcs8Pem.replace("-----END RSA PRIVATE KEY-----", "");
-    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
-
-    //Base64 decode the result
-
-    Log.d("TAG_R", pkcs8Pem);
-
-    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
-
-    //Extract the private key
-
-    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
-    KeyFactory kf = KeyFactory.getInstance("RSA");
-    PrivateKey privKey = kf.generatePrivate(keySpec);
-    return privKey;
-
-  }
-
-  public static PublicKey publicKey(String stringKey) throws Exception {
-    // Read the key into a String
-    StringBuilder pkcs8Lines = new StringBuilder();
-    BufferedReader rdr = new BufferedReader(new StringReader(stringKey));
-    String line;
-    while ((line = rdr.readLine()) != null) {
-      pkcs8Lines.append(line);
-    }
-
-    //Remove the "BEGIN" and "END" lines, as well as any whitespace
-
-    String pkcs8Pem = pkcs8Lines.toString();
-    pkcs8Pem = pkcs8Pem.replace("-----BEGIN PUBLIC KEY-----", "");
-    pkcs8Pem = pkcs8Pem.replace("-----END PUBLIC KEY-----", "");
-    pkcs8Pem = pkcs8Pem.replaceAll("\\s+", "");
-
-    //Base64 decode the result
-
-    byte[] pkcs8EncodedBytes = Base64.decode(pkcs8Pem, Base64.DEFAULT);
-
-    //Extract the public key
-
-    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pkcs8EncodedBytes);
-    KeyFactory kf = KeyFactory.getInstance("RSA");
-    PublicKey pubKey = kf.generatePublic(keySpec);
-    return pubKey;
-
-  }
-
-
-  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
-    byte[] encryptedBytes = decode(encryptedMessage, base64);
-    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PublicKey publicKey = publicKey(user.getPublicKey());
-    cipher.init(Cipher.DECRYPT_MODE, publicKey);
-    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
-    return new String(decryptedMessage, "UTF8");
-  }
-
-  public static byte[] decode(String data, Base64 base64) {
-    return base64.decode(data, base64.DEFAULT);
-  }
-
   public void getChat() {
     String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
     mChatTextView.setText(null);
@@ -555,7 +457,14 @@ public class MainActivity extends AppCompatActivity
               rtmpCamera1.setAuthorization(user, password);
             }
             if (rtmpCamera1.isRecording() || prepareEncoders()) {
-              rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
+              String url;
+              if (etUrl.getText().toString().isEmpty() || etUrl.getText().toString().equals("")) {
+                url = "rtmp://10.0.2.2/live/person";
+              } else {
+                url = etUrl.getText().toString();
+              }
+              Log.d("TAG_D", url);
+              rtmpCamera1.startStream(url);
 
               //If you get through starting the stream, your chat will start loading
               startRepeatingTask();
