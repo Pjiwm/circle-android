@@ -64,8 +64,11 @@ import com.pedro.encoder.input.video.CameraHelper;
 import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import com.pedro.rtplibrary.rtmp.RtmpCamera1;
+import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
+import com.pedro.rtpstreamer.utils.KeyUtils;
+import com.pedro.rtpstreamer.utils.KeyUtilsDemo;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
 import org.json.JSONArray;
@@ -75,6 +78,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.StringReader;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -82,12 +86,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-
+import java.util.Locale;
 import javax.crypto.Cipher;
 
 /**
@@ -124,7 +130,9 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
+  private JSONArray uuids;
   private RequestQueue queue;
+  private
   final Timer timer = new Timer();
 
 
@@ -155,18 +163,19 @@ public class MainActivity extends AppCompatActivity
     mChatTextView = findViewById(R.id.chat_textView);
     mChatScrollView = findViewById(R.id.chat_scrollview);
     queue = Volley.newRequestQueue(this);
-    Intent intentUser = getIntent();
-    if(intentUser.hasExtra("currentUsername")){
-      currentUsername = intentUser.getExtras().getString("currentUsername");
+    Intent intent = getIntent();
+    if(intent.hasExtra("currentUsername")){
+      currentUsername = intent.getExtras().getString("currentUsername");
       for (int i = 0; i < this.accounts.length; i++) {
         System.out.println(this.accounts[i].getUsername());
         if(currentUsername.equals(accounts[i].getUsername())){
           currentUser = accounts[i];
-          Log.d("TAG_USERLOGGEDIN", currentUser.getUsername());
         }
       }
 
     }
+    System.out.println();
+//    KeyUtilsDemo.jsDemo();
   }
 
   private void checkAndRequestPermissions() {
@@ -408,15 +417,6 @@ public class MainActivity extends AppCompatActivity
     return base64.encodeToString(data, base64.DEFAULT);
   }
 
-  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
-    byte[] encryptedBytes = decode(encryptedMessage, base64);
-    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PublicKey publicKey = publicKey(user.getPublicKey());
-    cipher.init(Cipher.DECRYPT_MODE, publicKey);
-    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
-    return new String(decryptedMessage, "UTF8");
-  }
-
   public static byte[] decode(String data, Base64 base64) {
     return base64.decode(data, base64.DEFAULT);
   }
@@ -430,6 +430,17 @@ public class MainActivity extends AppCompatActivity
               public void onResponse(JSONObject response) {
                 try {
                   JSONArray chats = response.getJSONArray("chats");
+
+                  //Decryption voor de lijst van messages.
+                  String chatsSignature = response.getString("signature");
+                  String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonArrayToByteArray(chats), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
+                  if (!uuid.isEmpty() || !uuid.equals("")) {
+                    Date uuidDate = new Date();
+                    JSONObject uuidObject = new JSONObject();
+                    uuidObject.put("uuid", uuid);
+                    uuidObject.put("date", uuidDate);
+                    uuids.put(uuidObject);
+                  }
                   for (int i = 0; i < chats.length(); i++) {
                     JSONObject chatMessage = chats.getJSONObject(i);
                     String person = chatMessage.getString("person");
@@ -439,7 +450,8 @@ public class MainActivity extends AppCompatActivity
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
                         String signature = chatMessage.getString("signature");
-                        String decryptedSign = decrypt(signature, accounts[j], b64);
+                        //Vul decrypt hier in voor individuele messages
+
                         String message = chatMessage.getString("message");
                         String hash = sha256String(message);
                         Log.d("TAG_D", decryptedSign + " " + hash);
@@ -496,35 +508,39 @@ public class MainActivity extends AppCompatActivity
   public void onClick(View v) {
     switch (v.getId()) {
       case R.id.b_start_stop:
-        Log.d("TAG_R", "b_start_stop: ");
-        if (!rtmpCamera1.isStreaming()) {
-          bStartStop.setText(getResources().getString(R.string.stop_button));
-          String user = etWowzaUser.getText().toString();
-          String password = etWowzaPassword.getText().toString();
-          if (!user.isEmpty() && !password.isEmpty()) {
-            rtmpCamera1.setAuthorization(user, password);
-          }
-          if (rtmpCamera1.isRecording() || prepareEncoders()) {
-            rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
+        if (currentUser != null) {
+          Log.d("TAG_R", "b_start_stop: ");
+          if (!rtmpCamera1.isStreaming()) {
+            bStartStop.setText(getResources().getString(R.string.stop_button));
+            String user = etWowzaUser.getText().toString();
+            String password = etWowzaPassword.getText().toString();
+            if (!user.isEmpty() && !password.isEmpty()) {
+              rtmpCamera1.setAuthorization(user, password);
+            }
+            if (rtmpCamera1.isRecording() || prepareEncoders()) {
+              rtmpCamera1.startStream("rtmp://10.0.2.2/live/person");
 
-            //If you get through starting the stream, your chat will start loading
-            startRepeatingTask();
+              //If you get through starting the stream, your chat will start loading
+              startRepeatingTask();
 
+            } else {
+              //If you see this all time when you start stream,
+              //it is because your encoder device dont support the configuration
+              //in video encoder maybe color format.
+              //If you have more encoder go to VideoEncoder or AudioEncoder class,
+              //change encoder and try
+              Toast.makeText(this, "Error preparing stream, This device cant do it",
+                      Toast.LENGTH_SHORT).show();
+              bStartStop.setText(getResources().getString(R.string.start_button));
+              stopRepeatingTask();
+            }
           } else {
-            //If you see this all time when you start stream,
-            //it is because your encoder device dont support the configuration
-            //in video encoder maybe color format.
-            //If you have more encoder go to VideoEncoder or AudioEncoder class,
-            //change encoder and try
-            Toast.makeText(this, "Error preparing stream, This device cant do it",
-                    Toast.LENGTH_SHORT).show();
             bStartStop.setText(getResources().getString(R.string.start_button));
-            stopRepeatingTask();
+            rtmpCamera1.stopStream();
+            timer.cancel();
           }
         } else {
-          bStartStop.setText(getResources().getString(R.string.start_button));
-          rtmpCamera1.stopStream();
-          timer.cancel();
+          Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
         }
         break;
       case R.id.b_record:
@@ -684,7 +700,7 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   public void surfaceCreated(SurfaceHolder surfaceHolder) {
-    drawerLayout.openDrawer(GravityCompat.START);
+    //drawerLayout.openDrawer(GravityCompat.START);
   }
 
   @Override
