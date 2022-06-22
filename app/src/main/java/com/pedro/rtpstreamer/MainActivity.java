@@ -461,28 +461,8 @@ public class MainActivity extends AppCompatActivity
                     for(int j = 0; j < accounts.length; j++) {
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
-                        String signature = chatMessage.getString("signature");
                         String message = chatMessage.getString("message");
-                        String messageUuid = KeyUtils.decrypt(signature, KeyUtils.stringToByteArray(message), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
-                        if (!messageUuid.isEmpty() || !messageUuid.equals("")) {
-                          Date uuidDate2 = new Date();
-                          JSONObject uuidObject2 = new JSONObject();
-                          uuidObject2.put("uuid", messageUuid);
-                          uuidObject2.put("date", uuidDate2);
-                          boolean wrongMessage2 = false;
-                          for (int l = 0; l < uuids.length(); l++) {
-                            if (uuidObject2.getString("uuid").equals(uuids.getJSONObject(l).getString("uuid"))) {
-                              wrongMessage2 = true;
-                            }
-                          }
-                          if (!wrongMessage2) {
-                            uuids.put(uuidObject2);
-                          } else {
-                            Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
-                            return;
-                          }
-                        }
-                          mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
+                        mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
 
                           mChatScrollView.post(new Runnable() {
                             @Override
