@@ -22,16 +22,18 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - name: Debug
+      run: cd app
+    - run: ls
+    - run: cd app/build
+    - run: ls
     - name: Build with Gradle
       run: ./gradlew app:assembleDebug
     - name: Debug
-      run: ls
-    - name: Debug
-      run: cd /app
-    - name: Debug
-      run: ls
-    - name: Debug
-      run: cd /app/build
+      run: cd app
+    - run: ls
+    - run: cd app/build
+    - run: ls
     - name: Upload APK
       uses: actions/upload-artifact@v2
       with:
