@@ -67,7 +67,6 @@ import com.pedro.rtplibrary.rtmp.RtmpCamera1;
 import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
-import com.pedro.rtpstreamer.utils.KeyUtils;
 import com.pedro.rtpstreamer.utils.KeyUtilsDemo;
 import com.pedro.rtpstreamer.utils.PathUtils;
 
@@ -78,7 +77,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.StringReader;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -130,9 +128,7 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
-  private JSONArray uuids;
   private RequestQueue queue;
-  private
   final Timer timer = new Timer();
 
 
@@ -417,6 +413,15 @@ public class MainActivity extends AppCompatActivity
     return base64.encodeToString(data, base64.DEFAULT);
   }
 
+  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage, base64);
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    PublicKey publicKey = publicKey(user.getPublicKey());
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
+    return new String(decryptedMessage, "UTF8");
+  }
+
   public static byte[] decode(String data, Base64 base64) {
     return base64.decode(data, base64.DEFAULT);
   }
@@ -430,17 +435,6 @@ public class MainActivity extends AppCompatActivity
               public void onResponse(JSONObject response) {
                 try {
                   JSONArray chats = response.getJSONArray("chats");
-
-                  //Decryption voor de lijst van messages.
-                  String chatsSignature = response.getString("signature");
-                  String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonArrayToByteArray(chats), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
-                  if (!uuid.isEmpty() || !uuid.equals("")) {
-                    Date uuidDate = new Date();
-                    JSONObject uuidObject = new JSONObject();
-                    uuidObject.put("uuid", uuid);
-                    uuidObject.put("date", uuidDate);
-                    uuids.put(uuidObject);
-                  }
                   for (int i = 0; i < chats.length(); i++) {
                     JSONObject chatMessage = chats.getJSONObject(i);
                     String person = chatMessage.getString("person");
@@ -450,8 +444,7 @@ public class MainActivity extends AppCompatActivity
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
                         String signature = chatMessage.getString("signature");
-                        //Vul decrypt hier in voor individuele messages
-
+                        String decryptedSign = decrypt(signature, accounts[j], b64);
                         String message = chatMessage.getString("message");
                         String hash = sha256String(message);
                         Log.d("TAG_D", decryptedSign + " " + hash);

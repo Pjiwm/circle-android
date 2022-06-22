@@ -1,9 +1,5 @@
 package com.pedro.rtpstreamer.utils;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 
@@ -41,7 +37,6 @@ public class KeyUtils {
         }
         return null;
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public static PrivateKey stringToPrivateKey(String private_key)
             throws NoSuchAlgorithmException,
             NoSuchPaddingException,
@@ -132,14 +127,13 @@ public class KeyUtils {
         System.out.println("---ENCRYPTION COMPLETE--");
         return encryptedData;
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public static String decrypt(String signature, byte[] object, PublicKey publicKey) throws Exception {
         byte[] signatureByteArray = java.util.Base64.getDecoder().decode(signature);
         return decrypt(signatureByteArray,object,publicKey);
     }
     /**
      * Decrypts the custom signature (hash and uuid) and checks the hash of the object and the decrypted hash
-     * @param signature The bytearray that will be signed
+     * @param cypher The bytearray that will be signed
      * @param publicKey The public key to be used to decrypt the signature
      * @return null if the key is not valid or with decryption errors. Otherwise, the UUID will be returned
      */
@@ -216,26 +210,21 @@ public class KeyUtils {
      * @param string string to be converted
      * @return Converted string as ByteArray
      */
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] stringToByteArray(String string){
         return string.getBytes(StandardCharsets.UTF_8);
     }
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] jsonObjectToByteArray(JSONObject jsonObject){
         //Conversion goes as follows JSONObject -> String (utf-8) -> Byte array
         return jsonObject.toString().getBytes(StandardCharsets.UTF_8);
     }
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] jsonArrayToByteArray(JSONArray jsonArray){
         //Conversion goes as follows JSONArray// -> String (utf-8) -> Byte array
         return jsonArray.toString().getBytes(StandardCharsets.UTF_8);
     }
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static JSONObject byteArrayToJsonObject(byte[] byteArray) throws JSONException{
         //Conversion goes as follows Byte array -> String (utf-8) -> JSONObject
         return new JSONObject(new String(byteArray, StandardCharsets.UTF_8));
     }
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static JSONArray byteArrayToJsonArray(byte[] byteArray) throws JSONException {
         //Conversion goes as follows Byte array -> String (utf-8) -> JSONArray
         String string =  new String(byteArray, StandardCharsets.UTF_8);
