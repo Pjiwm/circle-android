@@ -503,7 +503,8 @@ public class MainActivity extends AppCompatActivity
     for(int i = 0; i < uuids.length(); i++) {
       JSONObject obj = uuids.getJSONObject(i);
       String dateStr = obj.getString("date");
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      Log.i("DateString", dateStr);
+      SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy");
       Date date = sdf.parse(dateStr);
       Date death = addSecondsToDate(new Date(), -30);
       if(!date.before(death)) {

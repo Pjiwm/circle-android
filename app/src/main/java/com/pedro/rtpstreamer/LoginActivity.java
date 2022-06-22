@@ -72,7 +72,7 @@ public class LoginActivity extends AppCompatActivity {
                                 new Response.Listener<JSONObject>() {
                                     @Override
                                     public void onResponse(JSONObject response) {
-                                        Toast.makeText(LoginActivity.this,"Username and Private key combination is Correct",
+                                        Toast.makeText(LoginActivity.this,"Logged In",
                                                 Toast.LENGTH_SHORT).show();
                                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                         intent.putExtra("currentUsername", user.getUsername());
