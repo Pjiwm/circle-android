@@ -87,8 +87,10 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
@@ -130,7 +132,7 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
-  private JSONArray uuids;
+  private JSONArray uuids = new JSONArray();
   private RequestQueue queue;
   private Context mContext;
   private
@@ -482,7 +484,35 @@ public class MainActivity extends AppCompatActivity
   }
 
   public void updateUuidList() {
+    try {
+      uuids = renewUuidList();
+    } catch (JSONException e) {
+      e.printStackTrace();
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+  }
 
+  public JSONArray renewUuidList() throws JSONException, ParseException {
+    JSONArray newJsonArray = new JSONArray();
+    for(int i = 0; i < uuids.length(); i++) {
+      JSONObject obj = uuids.getJSONObject(i);
+      String dateStr = obj.getString("date");
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      Date date = sdf.parse(dateStr);
+      Date death = addSecondsToDate(new Date(), -30);
+      if(!date.before(death)) {
+        newJsonArray.put(uuids.getJSONObject(i));
+      }
+    }
+    return newJsonArray;
+  }
+
+  public Date addSecondsToDate(Date date, int seconds) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTime(date);
+    calendar.add(Calendar.SECOND, seconds);
+    return calendar.getTime();
   }
 
   Handler mHandler = new Handler();
