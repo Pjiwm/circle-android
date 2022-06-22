@@ -130,6 +130,7 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
+  private JSONArray uuids;
   private RequestQueue queue;
   private Context mContext;
   private
