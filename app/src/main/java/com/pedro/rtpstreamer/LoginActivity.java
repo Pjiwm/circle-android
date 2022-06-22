@@ -2,10 +2,8 @@ package com.pedro.rtpstreamer;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -21,7 +19,6 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
-import com.pedro.rtpstreamer.utils.GlobalVar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
