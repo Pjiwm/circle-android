@@ -454,12 +454,12 @@ public class MainActivity extends AppCompatActivity
                   }
                   for (int i = 0; i < chats.length(); i++) {
                     JSONObject chatMessage = chats.getJSONObject(i);
-                    String person = chatMessage.getString("person");
+                    JSONObject person = chatMessage.getJSONObject("person");
                     Log.d("TAG_D", String.valueOf(chats.length()) + " " + String.valueOf(i));
 
                     for(int j = 0; j < accounts.length; j++) {
-                      Log.d("TAG_D", person + " " + accounts[j].getPersonId());
-                      if (person.equals(accounts[j].getPersonId())) {
+                      Log.d("TAG_D", person.getString("_id") + " " + accounts[j].getPersonId());
+                      if (person.getString("_id").equals(accounts[j].getPersonId())) {
                         String message = chatMessage.getString("message");
                         mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
 
