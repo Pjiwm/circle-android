@@ -25,7 +25,7 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew app:assembleDebug
     - name: check dir
-      run: ls /app/build/outputs/apk/debug/
+      run: ls app/build/outputs/apk/debug/
     - name: Upload APK
       uses: actions/upload-artifact@v2
       with:
