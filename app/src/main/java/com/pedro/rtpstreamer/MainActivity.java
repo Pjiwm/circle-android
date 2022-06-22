@@ -130,10 +130,7 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
-  private JSONArray uuids;
   private RequestQueue queue;
-  private Context mContext;
-  private
   final Timer timer = new Timer();
 
 
@@ -404,18 +401,14 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public static String encrypt(String message, AuthClass user, Base64 base64) throws Exception {
 
-    byte[] messageToBytes = message.getBytes();
+  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage, base64);
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PrivateKey privateKey = privateKey(user.getPrivateKey());
-    cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-    byte[] encryptedBytes = cipher.doFinal(messageToBytes);
-    return encode(encryptedBytes, base64);
-  }
-
-  public static String encode(byte[] data, Base64 base64) {
-    return base64.encodeToString(data, base64.DEFAULT);
+    PublicKey publicKey = publicKey(user.getPublicKey());
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
+    return new String(decryptedMessage, "UTF8");
   }
 
   public static byte[] decode(String data, Base64 base64) {
@@ -431,28 +424,6 @@ public class MainActivity extends AppCompatActivity
               public void onResponse(JSONObject response) {
                 try {
                   JSONArray chats = response.getJSONArray("chats");
-
-                  //Decryption voor de lijst van messages.
-                  String chatsSignature = response.getString("signature");
-                  String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonArrayToByteArray(chats), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
-                  if (!uuid.isEmpty() || !uuid.equals("")) {
-                    Date uuidDate = new Date();
-                    JSONObject uuidObject = new JSONObject();
-                    uuidObject.put("uuid", uuid);
-                    uuidObject.put("date", uuidDate);
-                    boolean wrongMessage = false;
-                    for (int k = 0; k < uuids.length(); k++) {
-                      if (uuidObject.getString("uuid").equals(uuids.getJSONObject(k).getString("uuid"))) {
-                        wrongMessage = true;
-                      }
-                    }
-                    if (!wrongMessage) {
-                      uuids.put(uuidObject);
-                    } else {
-                      Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
-                      return;
-                    }
-                  }
                   for (int i = 0; i < chats.length(); i++) {
                     JSONObject chatMessage = chats.getJSONObject(i);
                     String person = chatMessage.getString("person");
@@ -461,6 +432,8 @@ public class MainActivity extends AppCompatActivity
                     for(int j = 0; j < accounts.length; j++) {
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
+                        String signature = chatMessage.getString("signature");
+                        String decryptedSign = decrypt(signature, accounts[j], b64);
                         String message = chatMessage.getString("message");
                         mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
 
@@ -554,15 +527,12 @@ public class MainActivity extends AppCompatActivity
         // Setup json object and url for departure
         String url = "http://10.0.2.2:3000/api/chats";
         JSONObject jsonBody = new JSONObject();
-        String hash = sha256String(etMessage.getText().toString());
-
         try {
-          String signature = encrypt(hash, currentUser, b64);
+
           jsonBody.put("person", new String(currentUser.getPersonId()));
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
           jsonBody.put("dateTime", new Date());
-          jsonBody.put("signature", signature);
         } catch (JSONException e) {
           e.printStackTrace();
         } catch (Exception e) {
