@@ -44,6 +44,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: Release V${{ github.run_number }}
+      - run: ls
       - name: Upload asset to release
         uses: actions/upload-release-asset@v1
         env:
