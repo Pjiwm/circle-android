@@ -12,10 +12,6 @@
           android:id="@+id/loginmenu"
           android:title="Login"
           app:showAsAction="always" />
-      <item
-          android:id="@+id/user_jop"
-          android:title="Jop"
-          app:showAsAction="always" />
 
     </menu>
   </item>
