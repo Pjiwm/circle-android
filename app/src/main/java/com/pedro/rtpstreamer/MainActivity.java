@@ -481,12 +481,17 @@ public class MainActivity extends AppCompatActivity
     queue.add(request);
   }
 
+  public void updateUuidList() {
+
+  }
+
   Handler mHandler = new Handler();
   Runnable mHandlerTask = new Runnable()
   {
     @Override
     public void run() {
       getChat();
+      updateUuidList();
       mHandler.postDelayed(mHandlerTask, 10000);
     }
   };
