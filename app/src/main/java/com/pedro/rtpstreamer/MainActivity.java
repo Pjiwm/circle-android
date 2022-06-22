@@ -548,7 +548,7 @@ public class MainActivity extends AppCompatActivity
         Log.d("TAG_R", "send message");
 
         // Setup json object and url for departure
-        String url = "http://10.0.2.2:3000/api/chats";
+        String url = "http://10.0.2.2:3000/api/chats/java";
         JSONObject jsonBody = new JSONObject();
         try {
 
@@ -556,6 +556,7 @@ public class MainActivity extends AppCompatActivity
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
           jsonBody.put("dateTime", new Date());
+          jsonBody.put("signature", "xxx");
         } catch (JSONException e) {
           e.printStackTrace();
         } catch (Exception e) {
