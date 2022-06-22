@@ -132,6 +132,7 @@ public class MainActivity extends AppCompatActivity
   private ScrollView mChatScrollView;
   private JSONArray uuids;
   private RequestQueue queue;
+  private Context mContext;
   private
   final Timer timer = new Timer();
 
@@ -439,7 +440,18 @@ public class MainActivity extends AppCompatActivity
                     JSONObject uuidObject = new JSONObject();
                     uuidObject.put("uuid", uuid);
                     uuidObject.put("date", uuidDate);
-                    uuids.put(uuidObject);
+                    boolean wrongMessage = false;
+                    for (int k = 0; k < uuids.length(); k++) {
+                      if (uuidObject.getString("uuid").equals(uuids.getJSONObject(k).getString("uuid"))) {
+                        wrongMessage = true;
+                      }
+                    }
+                    if (!wrongMessage) {
+                      uuids.put(uuidObject);
+                    } else {
+                      Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
+                      return;
+                    }
                   }
                   for (int i = 0; i < chats.length(); i++) {
                     JSONObject chatMessage = chats.getJSONObject(i);
@@ -450,12 +462,26 @@ public class MainActivity extends AppCompatActivity
                       Log.d("TAG_D", person + " " + accounts[j].getPersonId());
                       if (person.equals(accounts[j].getPersonId())) {
                         String signature = chatMessage.getString("signature");
-                        //Vul decrypt hier in voor individuele messages
-
                         String message = chatMessage.getString("message");
-                        String hash = sha256String(message);
-                        Log.d("TAG_D", decryptedSign + " " + hash);
-                        if (decryptedSign.equals(hash)) {
+                        String messageUuid = KeyUtils.decrypt(signature, KeyUtils.stringToByteArray(message), KeyUtils.stringToPublicKey(currentUser.getPublicKey()));
+                        if (!messageUuid.isEmpty() || !messageUuid.equals("")) {
+                          Date uuidDate2 = new Date();
+                          JSONObject uuidObject2 = new JSONObject();
+                          uuidObject2.put("uuid", messageUuid);
+                          uuidObject2.put("date", uuidDate2);
+                          boolean wrongMessage2 = false;
+                          for (int l = 0; l < uuids.length(); l++) {
+                            if (uuidObject2.getString("uuid").equals(uuids.getJSONObject(l).getString("uuid"))) {
+                              wrongMessage2 = true;
+                            }
+                          }
+                          if (!wrongMessage2) {
+                            uuids.put(uuidObject2);
+                          } else {
+                            Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
+                            return;
+                          }
+                        }
                           mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
 
                           mChatScrollView.post(new Runnable() {
@@ -464,7 +490,6 @@ public class MainActivity extends AppCompatActivity
                               mChatScrollView.fullScroll(View.FOCUS_DOWN);
                             }
                           });
-                        }
                       }
                     }
                   }
