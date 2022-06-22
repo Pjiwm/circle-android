@@ -130,7 +130,6 @@ public class MainActivity extends AppCompatActivity
   private TextView tvBitrate;
   private TextView mChatTextView;
   private ScrollView mChatScrollView;
-  private JSONArray uuids;
   private RequestQueue queue;
   private Context mContext;
   private
@@ -404,18 +403,14 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  public static String encrypt(String message, AuthClass user, Base64 base64) throws Exception {
 
-    byte[] messageToBytes = message.getBytes();
+  public static String decrypt(String encryptedMessage, AuthClass user, Base64 base64) throws Exception {
+    byte[] encryptedBytes = decode(encryptedMessage, base64);
     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    PrivateKey privateKey = privateKey(user.getPrivateKey());
-    cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-    byte[] encryptedBytes = cipher.doFinal(messageToBytes);
-    return encode(encryptedBytes, base64);
-  }
-
-  public static String encode(byte[] data, Base64 base64) {
-    return base64.encodeToString(data, base64.DEFAULT);
+    PublicKey publicKey = publicKey(user.getPublicKey());
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decryptedMessage = cipher.doFinal(encryptedBytes);
+    return new String(decryptedMessage, "UTF8");
   }
 
   public static byte[] decode(String data, Base64 base64) {
@@ -554,15 +549,12 @@ public class MainActivity extends AppCompatActivity
         // Setup json object and url for departure
         String url = "http://10.0.2.2:3000/api/chats";
         JSONObject jsonBody = new JSONObject();
-        String hash = sha256String(etMessage.getText().toString());
-
         try {
-          String signature = encrypt(hash, currentUser, b64);
+
           jsonBody.put("person", new String(currentUser.getPersonId()));
           jsonBody.put("room", currentUser.getRoomId());
           jsonBody.put("message", etMessage.getText().toString());
           jsonBody.put("dateTime", new Date());
-          jsonBody.put("signature", signature);
         } catch (JSONException e) {
           e.printStackTrace();
         } catch (Exception e) {
