@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity
       currentUsername = intentUser.getExtras().getString("currentUsername");
       for (int i = 0; i < this.accounts.length; i++) {
         System.out.println(this.accounts[i].getUsername());
-        if(currentUsername == accounts[i].getUsername()){
+        if(currentUsername.equals(accounts[i].getUsername())){
           currentUser = accounts[i];
           Log.d("TAG_USERLOGGEDIN", currentUser.getUsername());
         }

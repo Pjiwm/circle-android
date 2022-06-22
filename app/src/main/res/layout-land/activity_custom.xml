@@ -14,11 +14,10 @@
       >
 
     <SurfaceView
-        android:id="@+id/surfaceView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="-189dp"
-        tools:layout_editor_absoluteY="-16dp" />
+        android:id="@+id/surfaceView"
+        />
 
     <EditText
         android:id="@+id/send_text_message"
@@ -33,17 +32,18 @@
         app:layout_constraintBottom_toBottomOf="@+id/surfaceView"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.909"
-        tools:layout_editor_absoluteX="40dp" />
+        tools:ignore="SpeakableTextPresentCheck"
+        tools:layout_editor_absoluteX="40dp"
+        android:autofillHints="" />
 
     <ScrollView
         android:id="@+id/chat_scrollview"
-        android:layout_width="370dp"
-        android:layout_height="154dp"
+        android:layout_width="542dp"
+        android:layout_height="124dp"
+        android:background="#99000000"
         app:layout_constraintBottom_toTopOf="@+id/send_text_message"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintVertical_bias="0.933"
-        android:background="#99000000">
+        app:layout_constraintStart_toStartOf="parent">
 
       <LinearLayout
           android:id="@+id/chat_linear"
@@ -55,8 +55,8 @@
             android:id="@+id/chat_textView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textColor="@android:color/white"/>
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
       </LinearLayout>
     </ScrollView>
 
@@ -79,6 +79,7 @@
         android:layout_marginBottom="20dp"
         android:minHeight="48dp"
         android:text="@string/start_button"
+        android:textColor="#78909C"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/switch_camera"
         app:layout_constraintStart_toEndOf="@id/b_record" />
