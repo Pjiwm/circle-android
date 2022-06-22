@@ -22,7 +22,6 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Debug
     - run: cd ${{ github.workspace}} /app/build/outputs/apk/
     - run: ls
     - run: cd debug
