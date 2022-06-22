@@ -304,10 +304,6 @@ public class MainActivity extends AppCompatActivity
           Intent intent = new Intent(this, LoginActivity.class);
           startActivity(intent);
           return true;
-        case R.id.user_jop:
-          currentUser = accounts[0];
-          System.out.println(currentUser.getUsername());
-          return true;
 
       default:
         return false;
