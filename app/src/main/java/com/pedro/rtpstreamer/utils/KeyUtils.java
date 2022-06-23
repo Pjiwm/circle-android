@@ -135,7 +135,7 @@ public class KeyUtils {
     }
     /**
      * Decrypts the custom signature (hash and uuid) and checks the hash of the object and the decrypted hash
-     * @param cypher The bytearray that will be signed
+     * @param signature The bytearray that will be signed
      * @param publicKey The public key to be used to decrypt the signature
      * @return null if the key is not valid or with decryption errors. Otherwise, the UUID will be returned
      */
