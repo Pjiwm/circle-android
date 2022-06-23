@@ -362,7 +362,7 @@ public class MainActivity extends AppCompatActivity
                     Log.d("TAG_D", String.valueOf(chats.length()) + " " + String.valueOf(i));
 
                     for(int j = 0; j < accounts.length; j++) {
-                      Log.d("TAG_D", person.getString("_id") + " " + accounts[j].getPersonId());
+                      //Log.d("TAG_D", person.getString("_id") + " " + accounts[j].getPersonId());
                       if (person.getString("_id").equals(accounts[j].getPersonId())) {
                         String message = chatMessage.getString("message");
                         mChatTextView.append(accounts[j].getUsername() + ": " + message + "\n\n");
