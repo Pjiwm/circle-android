@@ -392,7 +392,7 @@ public class MainActivity extends AppCompatActivity
 
   public void updateUuidList() {
     try {
-      uuids = renewUuidList();
+      uuids = renewUuidList(uuids);
     } catch (JSONException e) {
       e.printStackTrace();
     } catch (ParseException e) {
@@ -400,7 +400,7 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public JSONArray renewUuidList() throws JSONException, ParseException {
+  public static JSONArray renewUuidList(JSONArray uuids) throws JSONException, ParseException {
     JSONArray newJsonArray = new JSONArray();
     for(int i = 0; i < uuids.length(); i++) {
       JSONObject obj = uuids.getJSONObject(i);
@@ -416,7 +416,7 @@ public class MainActivity extends AppCompatActivity
     return newJsonArray;
   }
 
-  public Date addSecondsToDate(Date date, int seconds) {
+  public static Date addSecondsToDate(Date date, int seconds) {
     Calendar calendar = Calendar.getInstance();
     calendar.setTime(date);
     calendar.add(Calendar.SECOND, seconds);

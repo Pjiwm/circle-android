@@ -13,6 +13,8 @@ import com.pedro.rtpstreamer.utils.AuthClass;
 import com.pedro.rtpstreamer.utils.AuthData;
 import com.pedro.rtpstreamer.utils.KeyUtils;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.*;
@@ -20,6 +22,7 @@ import org.junit.*;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Date;
 
 public class SecurityTest {
     @Rule
@@ -40,13 +43,6 @@ public class SecurityTest {
     private String ans1;
     private String ans2;
 
-//    @Before
-//    public void beforeEveryTest() throws Exception {
-//        hash1 = MainActivity.sha256String(message1);
-//        hash2 = MainActivity.sha256String(message2);
-//        signature1 = MainActivity.encrypt(hash1, currentUser, b64);
-//        signature2 = MainActivity.encrypt(hash2, currentUser, b64);
-//    }
 
     @Test
     public void ifHashingAStringCreatesAHash() {
@@ -86,16 +82,33 @@ public class SecurityTest {
     }
 
     @Test
-    public void ifAnEncryptedMessageCanBeVerified() throws Exception {
-        PublicKey pub = keyUtils.stringToPublicKey(accounts[0].getPublicKey());
-        PrivateKey pri = keyUtils.stringToPrivateKey(accounts[0].getPrivateKey());
-        byte[] b1 = keyUtils.encrypt(keyUtils.stringToByteArray(message1), pri);
-        byte[] b2 = keyUtils.encrypt(keyUtils.stringToByteArray(message1), pri);
-        Log.v("VVVVVVV", "b1: " + b1 + " - b2: " + b2);
-        ans1 = keyUtils.decrypt(b1, keyUtils.stringToByteArray(message1), pub);
-        ans2 = keyUtils.decrypt(b2, keyUtils.stringToByteArray(message1), pub);
-        Log.v("VVVVVVV", "ans1: " + ans1 + " - ans2: " + ans2);
-        assertEquals(ans1, ans2);
+    public void if30SecondsGetAddedToDate() throws Exception {
+        Date date = new Date();
+        int seconds = -30;
+        Date newDate = MainActivity.addSecondsToDate(date, -30);
+        assertNotEquals(date, newDate);
+    }
+
+    @Test
+    public void ifUuidListGetsRenewed() throws Exception {
+        Date newDate = new Date();
+        Date oldDate = MainActivity.addSecondsToDate(newDate, -372);
+        Date okDate = MainActivity.addSecondsToDate(newDate, -3);
+        JSONObject jOb1 = new JSONObject();
+        jOb1.put("uuid", "dsahdkjhsakjhdk");
+        jOb1.put("date", newDate.toString());
+        JSONObject jOb2 = new JSONObject();
+        jOb2.put("uuid", "tyrtyrthfdgdfgf");
+        jOb2.put("date", oldDate.toString());
+        JSONObject jOb3 = new JSONObject();
+        jOb3.put("uuid", "vbnckxzjnbckxzx");
+        jOb3.put("date", okDate.toString());
+        JSONArray jAr1 = new JSONArray();
+        jAr1.put(jOb1);
+        jAr1.put(jOb2);
+        jAr1.put(jOb3);
+        JSONArray jAr2 = MainActivity.renewUuidList(jAr1);
+        assertEquals(2, jAr2.length());
     }
 
 }
