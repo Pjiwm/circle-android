@@ -18,6 +18,7 @@
     <string name="service_rtp">Service RTP</string>
     <string name="cube_test_rtmp">Cube test RTMP</string>
     <string name="rotation_rtmp">Rotation RTMP</string>
+    <string name="ip_input">IP Adress</string>
 
     <string name="tv_select">Select your streamer</string>
     <string name="hint_rtsp">rtsp://yourendpoint</string>

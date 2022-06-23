@@ -30,6 +30,7 @@ public class LoginActivity extends AppCompatActivity {
 
     AuthData authData = new AuthData();
     private EditText mUsernameTextView;
+    private EditText mLoginURL;
     private Button mLoginButton;
     private RequestQueue queue;
     private Base64 b64;
@@ -41,6 +42,7 @@ public class LoginActivity extends AppCompatActivity {
 
         mUsernameTextView = findViewById(R.id.username);
         mLoginButton = findViewById(R.id.login);
+        mLoginURL = findViewById(R.id.login_url);
         queue = Volley.newRequestQueue(this);
 
         mLoginButton.setOnClickListener(new View.OnClickListener() {
@@ -48,11 +50,18 @@ public class LoginActivity extends AppCompatActivity {
             private AuthClass user;
             @Override
             public void onClick(View view) {
+                //Check IP Adress
+                String url = mLoginURL.getText().toString();
+                if (url.isEmpty() || url.equals("")){
+                    Toast.makeText(LoginActivity.this, "Ip Adress is required", Toast.LENGTH_SHORT).show();
+                } else {
+                    url = "http://" + mLoginURL.getText().toString() + ":3000/api/auth/login/java";
+                }
+
                 for (int i = 0; i < accounts.length; i++) {
                     String username = this.accounts[i].getUsername();
 
-                    // Setup json object and url for departure
-                    String url = "http://10.0.2.2:3000/api/auth/login/java";
+                    // Setup json object for departure
                     JSONObject jsonBody = new JSONObject();
 
                     if(mUsernameTextView.getText().toString().equals(username)){
@@ -76,6 +85,7 @@ public class LoginActivity extends AppCompatActivity {
                                                 Toast.LENGTH_SHORT).show();
                                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                         intent.putExtra("currentUsername", user.getUsername());
+                                        intent.putExtra("ipUrl", mLoginURL.getText().toString());
                                         startActivity(intent);
                                     }
                                 }, new Response.ErrorListener() {

@@ -113,11 +113,11 @@ public class MainActivity extends AppCompatActivity
   private AuthClass[] accounts = authData.getAuthData();
   private AuthClass currentUser = null;
   private String currentUsername = null;
+  private String ipUrl = null;
   private Base64 b64;
   private RtmpCamera1 rtmpCamera1;
   private Button bStartStop, bRecord;
   private EditText etMessage;
-  private EditText etUrl;
   private String currentDateAndTime = "";
   private File folder;
   //options menu
@@ -159,8 +159,6 @@ public class MainActivity extends AppCompatActivity
     tvBitrate = findViewById(R.id.tv_bitrate);
     etMessage = findViewById(R.id.send_text_message);
     etMessage.setHint(R.string.hint_chat);
-    etUrl = findViewById(R.id.send_url);
-    etUrl.setHint(R.string.hint_rtmp);
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
@@ -179,7 +177,9 @@ public class MainActivity extends AppCompatActivity
           currentUser = accounts[i];
         }
       }
-
+    }
+    if(intent.hasExtra("ipUrl")) {
+      ipUrl = intent.getExtras().getString("ipUrl");
     }
     System.out.println();
 //    KeyUtilsDemo.jsDemo();
@@ -321,6 +321,11 @@ public class MainActivity extends AppCompatActivity
 
   public void getChat() {
     String url = "http://10.0.2.2:3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+    if (ipUrl.isEmpty() || ipUrl.equals("")) {
+      Toast.makeText(mContext, "No URL defined", Toast.LENGTH_SHORT);
+    } else {
+      url = "http://" + ipUrl + ":3000/api/rooms/" + currentUser.getRoomId() + "/chats";
+    }
     mChatTextView.setText(null);
     JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
             new Response.Listener<JSONObject>() {
@@ -458,11 +463,11 @@ public class MainActivity extends AppCompatActivity
               rtmpCamera1.setAuthorization(user, password);
             }
             if (rtmpCamera1.isRecording() || prepareEncoders()) {
-              String url;
-              if (etUrl.getText().toString().isEmpty() || etUrl.getText().toString().equals("")) {
-                url = "rtmp://10.0.2.2/live/person";
+              String url = "rtmp://10.0.2.2/live/person";
+              if (ipUrl.isEmpty() || ipUrl.equals("")) {
+                Toast.makeText(mContext, "No URL defined", Toast.LENGTH_SHORT);
               } else {
-                url = etUrl.getText().toString();
+                url = "rtmp://" + ipUrl + "/live/" + currentUser.getUsername();
               }
               Log.d("TAG_D", url);
               rtmpCamera1.startStream(url);
@@ -495,6 +500,11 @@ public class MainActivity extends AppCompatActivity
 
         // Setup json object and url for departure
         String url = "http://10.0.2.2:3000/api/chats/java";
+        if (ipUrl.isEmpty() || ipUrl.equals("")) {
+          Toast.makeText(mContext, "No URL defined", Toast.LENGTH_SHORT);
+        } else {
+          url = "http://" + ipUrl + ":3000/api/chats/java";
+        }
         JSONObject jsonBody = new JSONObject();
         try {
 
