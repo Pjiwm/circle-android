@@ -336,22 +336,24 @@ public class MainActivity extends AppCompatActivity
                   Log.d("TAG_D", chatsSignature);
                   String uuid = KeyUtils.decrypt(chatsSignature, KeyUtils.jsonObjectToByteArray(chatsObject), KeyUtils.stringToPublicKey(serverKey));
                   Log.d("TAG_D", chatsObject.toString());
-                  if (!uuid.isEmpty() || !uuid.equals("")) {
-                    Date uuidDate = new Date();
-                    JSONObject uuidObject = new JSONObject();
-                    uuidObject.put("uuid", uuid);
-                    uuidObject.put("date", uuidDate);
-                    boolean wrongMessage = false;
-                    for (int k = 0; k < uuids.length(); k++) {
-                      if (uuidObject.getString("uuid").equals(uuids.getJSONObject(k).getString("uuid"))) {
-                        wrongMessage = true;
+                  if(uuid != null) {
+                    if (!uuid.isEmpty() || !uuid.equals("")) {
+                      Date uuidDate = new Date();
+                      JSONObject uuidObject = new JSONObject();
+                      uuidObject.put("uuid", uuid);
+                      uuidObject.put("date", uuidDate);
+                      boolean wrongMessage = false;
+                      for (int k = 0; k < uuids.length(); k++) {
+                        if (uuidObject.getString("uuid").equals(uuids.getJSONObject(k).getString("uuid"))) {
+                          wrongMessage = true;
+                        }
                       }
-                    }
-                    if (!wrongMessage) {
-                      uuids.put(uuidObject);
-                    } else {
-                      Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
-                      return;
+                      if (!wrongMessage) {
+                        uuids.put(uuidObject);
+                      } else {
+                        Toast.makeText(mContext, "Incorrect Message Received", Toast.LENGTH_SHORT);
+                        return;
+                      }
                     }
                   }
                   for (int i = 0; i < chats.length(); i++) {
