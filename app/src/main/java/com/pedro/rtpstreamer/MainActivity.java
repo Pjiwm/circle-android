@@ -519,6 +519,7 @@ public class MainActivity extends AppCompatActivity
                   public void onResponse(JSONObject response) {
                     Toast.makeText(MainActivity.this, "Message sent", Toast.LENGTH_SHORT).show();
                     etMessage.setText("");
+                    getChat();
                   }
                 }, new Response.ErrorListener() {
           @Override
